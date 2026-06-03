@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  command = ""
+  site = "cec49f5c-c4d3-4db9-9fdb-9edde3d43a2c"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

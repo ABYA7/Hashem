@@ -1,0 +1,919 @@
+let dictionaryDB = {};
+
+const bookNames = {
+    "gn": "Génesis", "ex": "Éxodo", "lv": "Levítico", "nm": "Números", "dt": "Deuteronomio",
+    "js": "Josué", "jud": "Jueces", "rt": "Rut", "1sm": "1 Samuel", "2sm": "2 Samuel",
+    "1kgs": "1 Reyes", "2kgs": "2 Reyes", "1ch": "1 Crónicas", "2ch": "2 Crónicas",
+    "ezr": "Esdras", "ne": "Nehemías", "et": "Ester", "job": "Job", "ps": "Salmos",
+    "prv": "Proverbios", "ec": "Eclesiastés", "so": "Cantares", "is": "Isaías",
+    "jr": "Jeremías", "lm": "Lamentaciones", "ez": "Ezequiel", "dn": "Daniel",
+    "ho": "Oseas", "jl": "Joel", "am": "Amós", "ob": "Abdías", "jn": "Jonás",
+    "mi": "Miqueas", "na": "Nahúm", "hk": "Habacuc", "zp": "Sofonías", "hg": "Hageo",
+    "zc": "Zacarías", "ml": "Malaquías", "mt": "Mateo", "mk": "Marcos", "lk": "Lucas",
+    "jo": "Juan", "act": "Hechos", "rm": "Romanos", "1co": "1 Corintios", "2co": "2 Corintios",
+    "gl": "Gálatas", "eph": "Efesios", "ph": "Filipenses", "cl": "Colosenses",
+    "1ts": "1 Tesalonicenses", "2ts": "2 Tesalonicenses", "1tm": "1 Timoteo",
+    "2tm": "2 Timoteo", "tt": "Tito", "phm": "Filemón", "hb": "Hebreos", "jm": "Santiago",
+    "1pe": "1 Pedro", "2pe": "2 Pedro", "1jo": "1 Juan", "2jo": "2 Juan", "3jo": "3 Juan",
+    "jd": "Judas", "re": "Apocalipsis"
+};
+
+let currentBibleData = [];
+let currentVersion = 'rv1909';
+let activeVerseId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Tema Claro/Oscuro
+    const savedTheme = localStorage.getItem('hashemTheme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        document.querySelector('.theme-toggle i').classList.replace('fa-moon', 'fa-sun');
+    }
+    
+    document.getElementById('themeToggle').addEventListener('click', (e) => {
+        const body = document.body;
+        const icon = e.currentTarget.querySelector('i');
+        body.classList.toggle('light-mode');
+        if (body.classList.contains('light-mode')) {
+            localStorage.setItem('hashemTheme', 'light');
+            icon.classList.replace('fa-moon', 'fa-sun');
+        } else {
+            localStorage.setItem('hashemTheme', 'dark');
+            icon.classList.replace('fa-sun', 'fa-moon');
+        }
+    });
+
+    // Inicializar Editor Avanzado
+    initStudies();
+
+    // Cargar Datos
+    await loadBible(currentVersion);
+    await loadDictionary();
+
+    // Event listener para cambiar versión
+    const versionSelect = document.getElementById('bibleVersionSelect');
+    if (versionSelect) {
+        versionSelect.addEventListener('change', async (e) => {
+            currentVersion = e.target.value;
+            await loadBible(currentVersion);
+        });
+    }
+
+    // Búsqueda Global
+    const globalSearch = document.getElementById('globalSearch');
+    globalSearch.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performGlobalSearch(e.target.value);
+        }
+    });
+
+    document.getElementById('closeSearchBtn').addEventListener('click', () => {
+        document.getElementById('searchResultsOverlay').style.display = 'none';
+    });
+
+    // Paleta de colores
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.verse-span') && !e.target.closest('.color-palette')) {
+            document.getElementById('colorPalette').style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (!activeVerseId) return;
+            const color = e.currentTarget.dataset.color;
+            const verseEl = document.querySelector(`span[data-verse-id="${activeVerseId}"]`);
+            verseEl.classList.remove('highlight-yellow', 'highlight-green', 'highlight-blue', 'highlight-pink');
+            
+            let highlights = JSON.parse(localStorage.getItem('hashemHighlights') || '{}');
+            if (color === 'clear') {
+                delete highlights[activeVerseId];
+            } else {
+                verseEl.classList.add(`highlight-${color}`);
+                highlights[activeVerseId] = color;
+            }
+            
+            localStorage.setItem('hashemHighlights', JSON.stringify(highlights));
+            document.getElementById('colorPalette').style.display = 'none';
+        });
+    });
+});
+
+async function loadDictionary() {
+    try {
+        const response = await fetch('data/diccionario.json');
+        dictionaryDB = await response.json();
+    } catch (error) {
+        console.error("Error cargando diccionario:", error);
+    }
+}
+
+async function loadBible(version) {
+    const bookSelect = document.getElementById('bibleBookSelect');
+    const chapterSelect = document.getElementById('bibleChapterSelect');
+    
+    bookSelect.innerHTML = '<option value="">Cargando libros...</option>';
+    bookSelect.disabled = true;
+    chapterSelect.disabled = true;
+
+    try {
+        const response = await fetch(`data/${version}.json`);
+        currentBibleData = await response.json();
+        
+        bookSelect.innerHTML = '<option value="">Seleccione un Libro</option>';
+        currentBibleData.forEach((book, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            // Fix applied: handling varying JSON formats gracefully
+            option.textContent = bookNames[book.abbrev] || book.abbrev || book.name;
+            bookSelect.appendChild(option);
+        });
+        
+        bookSelect.disabled = false;
+
+        const lastRead = JSON.parse(localStorage.getItem('hashemLastRead') || 'null');
+        if (lastRead && lastRead.version === version) {
+            bookSelect.value = lastRead.bookIndex;
+            bookSelect.dispatchEvent(new Event('change'));
+            chapterSelect.value = lastRead.chapterIndex;
+            chapterSelect.dispatchEvent(new Event('change'));
+        } else {
+            document.getElementById('bibleReaderArea').innerHTML = `
+                <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
+                    <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
+                    <p>Libros cargados. Seleccione un libro y capítulo para comenzar la lectura.</p>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error("Error cargando la Biblia:", error);
+        bookSelect.innerHTML = '<option value="">Error al cargar</option>';
+    }
+
+    bookSelect.addEventListener('change', (e) => {
+        const bookIndex = e.target.value;
+        if (bookIndex === "") {
+            chapterSelect.innerHTML = '<option value="">Capítulo</option>';
+            chapterSelect.disabled = true;
+            return;
+        }
+
+        const book = currentBibleData[bookIndex];
+        chapterSelect.innerHTML = '<option value="">Capítulo</option>';
+        
+        book.chapters.forEach((_, chapterIndex) => {
+            const option = document.createElement('option');
+            option.value = chapterIndex;
+            option.textContent = `Capítulo ${chapterIndex + 1}`;
+            chapterSelect.appendChild(option);
+        });
+        
+        chapterSelect.disabled = false;
+    });
+
+    chapterSelect.addEventListener('change', (e) => {
+        const chapterIndex = e.target.value;
+        const bookIndex = bookSelect.value;
+        
+        if (chapterIndex === "" || bookIndex === "") return;
+
+        // Fix applied: fallbacks for missing abbreviations
+        const bookAbbrev = currentBibleData[bookIndex].abbrev || currentBibleData[bookIndex].name || `book${bookIndex}`;
+        const verses = currentBibleData[bookIndex].chapters[chapterIndex];
+        const bookName = bookSelect.options[bookSelect.selectedIndex].text;
+        
+        localStorage.setItem('hashemLastRead', JSON.stringify({
+            version: currentVersion,
+            bookIndex: bookIndex,
+            chapterIndex: chapterIndex
+        }));
+
+        renderChapter(bookName, parseInt(chapterIndex) + 1, verses, bookAbbrev);
+    });
+}
+
+function renderChapter(bookName, chapterNum, verses, bookAbbrev) {
+    const readerArea = document.getElementById('bibleReaderArea');
+    
+    // Controles de navegación superior
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">
+            <button class="nav-chapter-btn" onclick="changeChapter(-1)" style="background: none; border: none; color: var(--accent); font-size: 20px; cursor: pointer;" title="Capítulo Anterior"><i class="fas fa-chevron-left"></i></button>
+            <h2 style="color: var(--accent); margin: 0;">${bookName} ${chapterNum}</h2>
+            <button class="nav-chapter-btn" onclick="changeChapter(1)" style="background: none; border: none; color: var(--accent); font-size: 20px; cursor: pointer;" title="Capítulo Siguiente"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    `;
+    
+    const highlights = JSON.parse(localStorage.getItem('hashemHighlights') || '{}');
+
+    // Manejo seguro por si el formato de los versículos es distinto
+    let versesArray = Array.isArray(verses) ? verses : [];
+    if (!Array.isArray(verses) && typeof verses === 'object') {
+        versesArray = Object.values(verses);
+    }
+
+    versesArray.forEach((verseText, index) => {
+        const verseNum = index + 1;
+        const verseId = `${currentVersion}-${bookAbbrev}-${chapterNum}-${verseNum}`;
+        const highlightColor = highlights[verseId] ? `highlight-${highlights[verseId]}` : '';
+
+        html += `<p style="margin-bottom: 10px;">
+                    <sup style="color: var(--accent); font-weight: bold; margin-right: 5px;">${verseNum}</sup>
+                    <span class="verse-span ${highlightColor}" data-verse-id="${verseId}">${verseText}</span>
+                 </p>`;
+    });
+    
+    // Controles de navegación inferior
+    html += `
+        <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+            <button class="nav-chapter-btn" onclick="changeChapter(-1)" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;"><i class="fas fa-arrow-left"></i> Anterior</button>
+            <button class="nav-chapter-btn" onclick="changeChapter(1)" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Siguiente <i class="fas fa-arrow-right"></i></button>
+        </div>
+    `;
+
+    readerArea.innerHTML = html;
+    readerArea.scrollTop = 0; 
+
+    document.querySelectorAll('.verse-span').forEach(span => {
+        span.addEventListener('click', (e) => {
+            activeVerseId = e.currentTarget.dataset.verseId;
+            const palette = document.getElementById('colorPalette');
+            const rect = e.currentTarget.getBoundingClientRect();
+            const readerRect = readerArea.getBoundingClientRect();
+            
+            palette.style.display = 'flex';
+            palette.style.top = `${e.clientY - readerRect.top + readerArea.scrollTop - 40}px`;
+            palette.style.left = `${Math.min(e.clientX - readerRect.left, readerArea.offsetWidth - 150)}px`;
+            
+            e.stopPropagation();
+        });
+    });
+}
+
+// Función para cambiar de capítulo con flechas
+window.changeChapter = function(delta) {
+    const bookSelect = document.getElementById('bibleBookSelect');
+    const chapterSelect = document.getElementById('bibleChapterSelect');
+    
+    if (bookSelect.value === "" || chapterSelect.value === "") return;
+    
+    let currentBookIndex = parseInt(bookSelect.value);
+    let currentChapterIndex = parseInt(chapterSelect.value);
+    
+    currentChapterIndex += delta;
+    
+    // Verificar si sobrepasa los límites del libro actual
+    const bookData = currentBibleData[currentBookIndex];
+    const totalChapters = bookData.chapters.length;
+    
+    if (currentChapterIndex < 0) {
+        // Ir al libro anterior (último capítulo)
+        if (currentBookIndex > 0) {
+            currentBookIndex--;
+            bookSelect.value = currentBookIndex;
+            bookSelect.dispatchEvent(new Event('change')); // Cargar nuevo libro en los selects
+            
+            const prevBookData = currentBibleData[currentBookIndex];
+            chapterSelect.value = prevBookData.chapters.length - 1;
+            chapterSelect.dispatchEvent(new Event('change'));
+        }
+    } else if (currentChapterIndex >= totalChapters) {
+        // Ir al libro siguiente (primer capítulo)
+        if (currentBookIndex < currentBibleData.length - 1) {
+            currentBookIndex++;
+            bookSelect.value = currentBookIndex;
+            bookSelect.dispatchEvent(new Event('change')); // Cargar nuevo libro
+            
+            chapterSelect.value = 0;
+            chapterSelect.dispatchEvent(new Event('change'));
+        }
+    } else {
+        // Moverse en el mismo libro
+        chapterSelect.value = currentChapterIndex;
+        chapterSelect.dispatchEvent(new Event('change'));
+    }
+};
+
+// Búsqueda Global
+function performGlobalSearch(query) {
+    const term = query.trim().toLowerCase();
+    if (!term || currentBibleData.length === 0) return;
+
+    const overlay = document.getElementById('searchResultsOverlay');
+    const content = document.getElementById('searchResultsContent');
+    overlay.style.display = 'flex';
+    content.innerHTML = '<p>Buscando...</p>';
+
+    setTimeout(() => {
+        const results = [];
+        const regex = new RegExp(`(${term})`, 'gi');
+
+        currentBibleData.forEach((book, bookIndex) => {
+            const bookName = bookNames[book.abbrev] || book.abbrev || book.name;
+            book.chapters.forEach((chapter, chapterIndex) => {
+                
+                let versesArray = Array.isArray(chapter) ? chapter : [];
+                if (!Array.isArray(chapter) && typeof chapter === 'object') {
+                    versesArray = Object.values(chapter);
+                }
+
+                versesArray.forEach((verse, verseIndex) => {
+                    if (verse.toLowerCase().includes(term)) {
+                        const highlightedText = verse.replace(regex, '<span class="search-highlight">$1</span>');
+                        
+                        results.push({
+                            bookIndex,
+                            chapterIndex,
+                            verseIndex,
+                            bookName,
+                            text: highlightedText
+                        });
+                    }
+                });
+            });
+        });
+
+        if (results.length === 0) {
+            content.innerHTML = `<p>No se encontraron resultados para "${query}".</p>`;
+            return;
+        }
+
+        let html = `<p style="margin-bottom: 15px;">Se encontraron ${results.length} resultados para "<strong>${query}</strong>":</p>`;
+        
+        const limit = Math.min(results.length, 100);
+        for(let i=0; i<limit; i++) {
+            const res = results[i];
+            html += `
+                <div class="search-result-item" onclick="goToSearchResult(${res.bookIndex}, ${res.chapterIndex}, ${res.verseIndex})">
+                    <span class="search-result-ref">${res.bookName} ${res.chapterIndex + 1}:${res.verseIndex + 1}</span>
+                    <span class="search-result-text">${res.text}</span>
+                </div>
+            `;
+        }
+        
+        if (results.length > 100) {
+            html += `<p style="text-align:center; color: var(--text-secondary); margin-top:10px;">Mostrando los primeros 100 resultados.</p>`;
+        }
+
+        content.innerHTML = html;
+    }, 50);
+}
+
+function goToSearchResult(bookIndex, chapterIndex, verseIndex) {
+    document.getElementById('searchResultsOverlay').style.display = 'none';
+    showModule('bible', document.querySelector('.menu li:first-child'));
+    
+    const bookSelect = document.getElementById('bibleBookSelect');
+    const chapterSelect = document.getElementById('bibleChapterSelect');
+    
+    bookSelect.value = bookIndex;
+    bookSelect.dispatchEvent(new Event('change'));
+    
+    chapterSelect.value = chapterIndex;
+    chapterSelect.dispatchEvent(new Event('change'));
+    
+    setTimeout(() => {
+        const bookAbbrev = currentBibleData[bookIndex].abbrev || currentBibleData[bookIndex].name || `book${bookIndex}`;
+        const verseId = `${currentVersion}-${bookAbbrev}-${chapterIndex + 1}-${verseIndex + 1}`;
+        const verseEl = document.querySelector(`span[data-verse-id="${verseId}"]`);
+        if (verseEl) {
+            verseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            verseEl.style.backgroundColor = 'rgba(212, 175, 55, 0.4)';
+            setTimeout(() => {
+                verseEl.style.backgroundColor = '';
+            }, 2000);
+        }
+    }, 100);
+}
+
+function showModule(id, element) {
+    document.querySelectorAll('.module').forEach(module => {
+        module.classList.remove('active');
+    });
+
+    document.querySelectorAll('.menu li').forEach(item => {
+        item.classList.remove('active-nav');
+    });
+
+    document.getElementById(id).classList.add('active');
+
+    if (element) {
+        element.classList.add('active-nav');
+    }
+}
+
+// ====== DICCIONARIO ENCICLOPÉDICO ======
+let currentDictFilter = {
+    search: '',
+    category: 'all',
+    letter: 'all'
+};
+
+async function loadDictionary() {
+    try {
+        const response = await fetch('data/diccionario.json');
+        dictionaryDB = await response.json(); // Ahora es un Array de objetos
+        
+        // Inicializar alfabeto
+        initDictionaryAlphabet();
+        
+        // Renderizar lista completa inicialmente
+        filterDictionary();
+        
+        // Event Listeners
+        document.getElementById('dictionarySearch').addEventListener('input', (e) => {
+            currentDictFilter.search = e.target.value.trim().toLowerCase();
+            currentDictFilter.letter = 'all'; // Resetear letra al buscar
+            filterDictionary();
+        });
+
+        document.getElementById('dictionaryCategory').addEventListener('change', (e) => {
+            currentDictFilter.category = e.target.value;
+            filterDictionary();
+        });
+
+    } catch (error) {
+        console.error("Error cargando diccionario:", error);
+    }
+}
+
+function initDictionaryAlphabet() {
+    const alphabetDiv = document.getElementById('dictionaryAlphabet');
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    
+    let html = `<button class="dict-letter-btn active" data-letter="all" style="padding: 5px 10px; border: 1px solid var(--border-color); background: var(--accent); color: #000; border-radius: 3px; cursor: pointer;">Todos</button>`;
+    
+    letters.forEach(letter => {
+        html += `<button class="dict-letter-btn" data-letter="${letter}" style="padding: 5px 10px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 3px; cursor: pointer;">${letter}</button>`;
+    });
+
+    alphabetDiv.innerHTML = html;
+
+    // Add events
+    document.querySelectorAll('.dict-letter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.dict-letter-btn').forEach(b => {
+                b.style.background = 'var(--bg-tertiary)';
+                b.style.color = 'var(--text-primary)';
+            });
+            e.target.style.background = 'var(--accent)';
+            e.target.style.color = '#000';
+            
+            currentDictFilter.letter = e.target.dataset.letter;
+            // Limpiar búsqueda por texto al usar filtro de letra
+            document.getElementById('dictionarySearch').value = '';
+            currentDictFilter.search = '';
+            filterDictionary();
+        });
+    });
+}
+
+function filterDictionary() {
+    if (!Array.isArray(dictionaryDB)) return;
+
+    const filtered = dictionaryDB.filter(item => {
+        // Normalizar texto para búsqueda
+        const termNorm = item.termino.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const searchNorm = currentDictFilter.search.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        const matchSearch = termNorm.includes(searchNorm) || (item.definicion && item.definicion.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(searchNorm));
+        const matchCategory = currentDictFilter.category === 'all' || item.categoria === currentDictFilter.category;
+        
+        let matchLetter = true;
+        if (currentDictFilter.letter !== 'all') {
+            matchLetter = termNorm.startsWith(currentDictFilter.letter.toLowerCase());
+        }
+
+        return matchSearch && matchCategory && matchLetter;
+    });
+
+    // Ordenar alfabéticamente
+    filtered.sort((a, b) => a.termino.localeCompare(b.termino));
+
+    renderDictionaryList(filtered);
+}
+
+function renderDictionaryList(items) {
+    const listDiv = document.getElementById('dictionaryTermsList');
+    
+    if (items.length === 0) {
+        listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-secondary);">No se encontraron términos que coincidan con los filtros.</p>';
+        return;
+    }
+
+    let html = '';
+    items.forEach((item, index) => {
+        // Encontrar índice real en la BD para referenciar
+        const realIndex = dictionaryDB.findIndex(dbItem => dbItem.termino === item.termino);
+        
+        html += `
+            <div class="dict-list-item" onclick="showDictionaryArticle(${realIndex})" style="padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.3s;">
+                <h3 style="margin: 0 0 5px 0; color: var(--accent); font-size: 16px;">${item.termino}</h3>
+                <span style="font-size: 12px; color: #fff; background: #333; padding: 2px 8px; border-radius: 12px;">${item.categoria}</span>
+            </div>
+        `;
+    });
+
+    listDiv.innerHTML = html;
+}
+
+window.showDictionaryArticle = function(index) {
+    const articleDiv = document.getElementById('dictionaryArticle');
+    const item = dictionaryDB[index];
+    
+    if (!item) return;
+
+    // Resaltar en la lista
+    document.querySelectorAll('.dict-list-item').forEach(el => el.style.background = 'transparent');
+    const clickedItem = event.currentTarget;
+    if (clickedItem) clickedItem.style.background = 'rgba(212, 175, 55, 0.1)';
+
+    let refsHtml = '';
+    if (item.referencias && item.referencias.length > 0) {
+        refsHtml = `
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border-color);">
+                <h4 style="color: var(--accent); margin-bottom: 10px;">Referencias Bíblicas:</h4>
+                <ul style="list-style-type: none; padding: 0;">
+                    ${item.referencias.map(ref => `<li style="margin-bottom: 5px;"><i class="fas fa-bookmark" style="color: var(--accent); margin-right: 8px;"></i> ${ref}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    let adminButtons = '';
+    if (isAdminMode) {
+        adminButtons = `
+            <div style="position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;">
+                <button onclick="openDictAdminModal(${index})" style="background: #f39c12; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;"><i class="fas fa-pen"></i></button>
+                <button onclick="deleteDictArticle(${index})" style="background: #e74c3c; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+    }
+
+    const html = `
+        ${adminButtons}
+        <h1 style="color: var(--accent); margin-bottom: 5px; font-size: 32px;">${item.termino}</h1>
+        <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+            <span style="font-size: 13px; color: #000; background: var(--accent); padding: 4px 10px; border-radius: 15px; font-weight: bold;"><i class="fas fa-folder"></i> ${item.categoria}</span>
+            ${item.fuente ? `<span style="font-size: 13px; color: #fff; background: #555; padding: 4px 10px; border-radius: 15px;"><i class="fas fa-scroll"></i> ${item.fuente}</span>` : ''}
+        </div>
+        
+        <div style="line-height: 1.8; font-size: 16px; color: var(--text-primary);">
+            ${item.definicion.replace(/\n/g, '<br><br>')}
+        </div>
+        
+        ${item.nombre_hebreo ? `<h3 style="color: var(--accent); margin-top:20px;">Nombre en hebreo</h3><p>${item.nombre_hebreo}</p>` : ''}
+        ${item.pronunciacion ? `<h3 style="color: var(--accent);">Pronunciación</h3><p>${item.pronunciacion}</p>` : ''}
+        ${item.significado ? `<h3 style="color: var(--accent);">Significado</h3><p>${item.significado}</p>` : ''}
+        ${item.etimologia ? `<h3 style="color: var(--accent);">Etimología</h3><p>${item.etimologia}</p>` : ''}
+        ${item.primera_aparicion ? `<h3 style="color: var(--accent);">Primera aparición bíblica</h3><p>${item.primera_aparicion}</p>` : ''}
+        ${item.historia ? `<h3 style="color: var(--accent);">Historia completa</h3><p>${item.historia}</p>` : ''}
+        ${item.arbol_genealogico ? `<h3 style="color: var(--accent);">Árbol genealógico</h3><p>${item.arbol_genealogico}</p>` : ''}
+        ${item.linea_cronologica ? `<h3 style="color: var(--accent);">Línea cronológica</h3><p>${item.linea_cronologica}</p>` : ''}
+        ${item.comentarios_rab ? `<h3 style="color: var(--accent);">Comentarios rabínicos</h3><p>${item.comentarios_rab}</p>` : ''}
+        ${item.datos_arqueologicos ? `<h3 style="color: var(--accent);">Datos arqueológicos</h3><p>${item.datos_arqueologicos}</p>` : ''}
+        ${item.mapas ? `<h3 style="color: var(--accent);">Mapas relacionados</h3><p>${item.mapas}</p>` : ''}
+        ${item.imagenes ? `<h3 style="color: var(--accent);">Imágenes ilustrativas</h3><p>${item.imagenes}</p>` : ''}
+        ${item.curiosidades ? `<h3 style="color: var(--accent);">Curiosidades</h3><p>${item.curiosidades}</p>` : ''}
+        ${item.aplicacion_espiritual ? `<h3 style="color: var(--accent);">Aplicación espiritual</h3><p>${item.aplicacion_espiritual}</p>` : ''}
+        ${refsHtml}
+    `;
+
+    articleDiv.innerHTML = html;
+    articleDiv.scrollTop = 0;
+};
+
+// ====== MODO ADMIN (OCULTO) ======
+let isAdminMode = false;
+
+document.getElementById('globalSearch').addEventListener('input', (e) => {
+    if (e.target.value === 'adminhashem') {
+        unlockAdminMode();
+        e.target.value = '';
+    }
+});
+
+function unlockAdminMode() {
+    isAdminMode = true;
+    document.getElementById('adminDictControls').style.display = 'flex';
+    alert("MODO ADMINISTRADOR DESBLOQUEADO");
+    filterDictionary(); // Re-render to show edit buttons if an article is open
+}
+
+window.lockAdminMode = function() {
+    isAdminMode = false;
+    document.getElementById('adminDictControls').style.display = 'none';
+    alert("Modo Administrador Bloqueado");
+    document.getElementById('dictionaryArticle').innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
+            <i class="fas fa-book-reader" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
+            <p>Seleccione un término de la lista para leer el artículo enciclopédico.</p>
+        </div>
+    `;
+    filterDictionary();
+};
+
+window.openDictAdminModal = function(index = -1) {
+    const modal = document.getElementById('dictAdminModal');
+    const title = document.getElementById('dictAdminTitle');
+    
+    if (index >= 0) {
+        const item = dictionaryDB[index];
+        title.textContent = "Editar Artículo";
+        document.getElementById('dictAdminIndex').value = index;
+        document.getElementById('dictAdminTermino').value = item.termino || '';
+        document.getElementById('dictAdminCategoria').value = item.categoria || '';
+        document.getElementById('dictAdminFuente').value = item.fuente || '';
+        document.getElementById('dictAdminDefinicion').value = item.definicion || '';
+        document.getElementById('dictAdminReferencias').value = item.referencias ? item.referencias.join(', ') : '';
+        // New fields
+        document.getElementById('dictAdminNombreHebreo').value = item.nombre_hebreo || '';
+        document.getElementById('dictAdminPronunciacion').value = item.pronunciacion || '';
+        document.getElementById('dictAdminSignificado').value = item.significado || '';
+        document.getElementById('dictAdminEtimologia').value = item.etimologia || '';
+        document.getElementById('dictAdminPrimeraAparicion').value = item.primera_aparicion || '';
+        document.getElementById('dictAdminHistoria').value = item.historia || '';
+        document.getElementById('dictAdminArbolGenealogico').value = item.arbol_genealogico || '';
+        document.getElementById('dictAdminLineaCronologica').value = item.linea_cronologica || '';
+        document.getElementById('dictAdminComentariosRabinicos').value = item.comentarios_rab || '';
+        document.getElementById('dictAdminDatosArqueologicos').value = item.datos_arqueologicos || '';
+        document.getElementById('dictAdminMapas').value = item.mapas || '';
+        document.getElementById('dictAdminImagenes').value = item.imagenes || '';
+        document.getElementById('dictAdminCuriosidades').value = item.curiosidades || '';
+        document.getElementById('dictAdminAplicacionEspiritual').value = item.aplicacion_espiritual || '';
+    } else {
+        title.textContent = "Nuevo Artículo";
+        document.getElementById('dictAdminIndex').value = "-1";
+        document.getElementById('dictAdminTermino').value = "";
+        document.getElementById('dictAdminCategoria').value = "";
+        document.getElementById('dictAdminFuente').value = "";
+        document.getElementById('dictAdminDefinicion').value = "";
+        document.getElementById('dictAdminReferencias').value = "";
+        // Reset new fields
+        document.getElementById('dictAdminNombreHebreo').value = "";
+        document.getElementById('dictAdminPronunciacion').value = "";
+        document.getElementById('dictAdminSignificado').value = "";
+        document.getElementById('dictAdminEtimologia').value = "";
+        document.getElementById('dictAdminPrimeraAparicion').value = "";
+        document.getElementById('dictAdminHistoria').value = "";
+        document.getElementById('dictAdminArbolGenealogico').value = "";
+        document.getElementById('dictAdminLineaCronologica').value = "";
+        document.getElementById('dictAdminComentariosRabinicos').value = "";
+        document.getElementById('dictAdminDatosArqueologicos').value = "";
+        document.getElementById('dictAdminMapas').value = "";
+        document.getElementById('dictAdminImagenes').value = "";
+        document.getElementById('dictAdminCuriosidades').value = "";
+        document.getElementById('dictAdminAplicacionEspiritual').value = "";
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.saveDictArticle = function() {
+    const index = parseInt(document.getElementById('dictAdminIndex').value);
+    const refsRaw = document.getElementById('dictAdminReferencias').value;
+
+    // Recoger campos adicionales
+    const nombreHebreo = document.getElementById('dictAdminNombreHebreo').value.trim();
+    const pronunciacion = document.getElementById('dictAdminPronunciacion').value.trim();
+    const significado = document.getElementById('dictAdminSignificado').value.trim();
+    const etimologia = document.getElementById('dictAdminEtimologia').value.trim();
+    const primeraAparicion = document.getElementById('dictAdminPrimeraAparicion').value.trim();
+    const historia = document.getElementById('dictAdminHistoria').value.trim();
+    const arbolGenealogico = document.getElementById('dictAdminArbolGenealogico').value.trim();
+    const lineaCronologica = document.getElementById('dictAdminLineaCronologica').value.trim();
+    const comentariosRabinicos = document.getElementById('dictAdminComentariosRabinicos').value.trim();
+    const datosArqueologicos = document.getElementById('dictAdminDatosArqueologicos').value.trim();
+    const mapas = document.getElementById('dictAdminMapas').value.trim();
+    const imagenes = document.getElementById('dictAdminImagenes').value.trim();
+    const curiosidades = document.getElementById('dictAdminCuriosidades').value.trim();
+    const aplicacionEspiritual = document.getElementById('dictAdminAplicacionEspiritual').value.trim();
+
+    const newItem = {
+        termino: document.getElementById('dictAdminTermino').value.trim(),
+        categoria: document.getElementById('dictAdminCategoria').value.trim(),
+        fuente: document.getElementById('dictAdminFuente').value.trim(),
+        definicion: document.getElementById('dictAdminDefinicion').value.trim(),
+        referencias: refsRaw ? refsRaw.split(',').map(r => r.trim()).filter(r => r) : [],
+        nombre_hebreo: nombreHebreo,
+        pronunciacion: pronunciacion,
+        significado: significado,
+        etimologia: etimologia,
+        primera_aparicion: primeraAparicion,
+        historia: historia,
+        arbol_genealogico: arbolGenealogico,
+        linea_cronologica: lineaCronologica,
+        comentarios_rab: comentariosRabinicos,
+        datos_arqueologicos: datosArqueologicos,
+        mapas: mapas,
+        imagenes: imagenes,
+        curiosidades: curiosidades,
+        aplicacion_espiritual: aplicacionEspiritual
+    };
+    
+    if (!newItem.termino || !newItem.definicion) {
+        alert("El término y la definición son obligatorios.");
+        return;
+    }
+    
+    if (index >= 0) {
+        dictionaryDB[index] = newItem;
+    } else {
+        dictionaryDB.push(newItem);
+    }
+    
+    document.getElementById('dictAdminModal').style.display = 'none';
+    filterDictionary();
+    if (index >= 0) showDictionaryArticle(index);
+    alert("Artículo guardado en memoria. Recuerda Descargar la Base de Datos para no perder los cambios.");
+};
+
+window.deleteDictArticle = function(index) {
+    if (confirm("¿Estás seguro de que deseas borrar este artículo?")) {
+        dictionaryDB.splice(index, 1);
+        document.getElementById('dictionaryArticle').innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
+                <i class="fas fa-book-reader" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
+                <p>Seleccione un término de la lista para leer el artículo enciclopédico.</p>
+            </div>
+        `;
+        filterDictionary();
+    }
+};
+
+window.downloadDictJson = function() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dictionaryDB, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "diccionario.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+};
+
+// ==========================================
+// LÓGICA DEL EDITOR DE ESTUDIOS AVANZADO
+// ==========================================
+
+let hashemStudies = [];
+let currentStudyIndex = -1;
+
+window.initStudies = function() {
+    const savedStudies = localStorage.getItem('hashemStudies');
+    if (savedStudies) {
+        hashemStudies = JSON.parse(savedStudies);
+    } else {
+        // Migrar el contenido viejo si existe
+        const oldContent = localStorage.getItem('hashemEditorContent');
+        if (oldContent) {
+            hashemStudies.push({
+                title: "Estudio Recuperado",
+                date: new Date().toLocaleDateString(),
+                content: oldContent
+            });
+            localStorage.removeItem('hashemEditorContent');
+        }
+    }
+    renderStudiesList();
+    if (hashemStudies.length > 0) {
+        openStudy(0);
+    } else {
+        createNewStudy();
+    }
+};
+
+window.renderStudiesList = function() {
+    const list = document.getElementById('studiesList');
+    list.innerHTML = '';
+    hashemStudies.forEach((study, index) => {
+        const div = document.createElement('div');
+        div.className = `study-item ${index === currentStudyIndex ? 'active' : ''}`;
+        div.onclick = () => openStudy(index);
+        
+        div.innerHTML = `
+            <div class="study-item-title">${study.title || 'Estudio sin título'}</div>
+            <div class="study-item-date">${study.date}</div>
+        `;
+        list.appendChild(div);
+    });
+};
+
+window.openStudy = function(index) {
+    currentStudyIndex = index;
+    const study = hashemStudies[index];
+    document.getElementById('studyTitle').value = study.title;
+    document.getElementById('studyEditor').innerHTML = study.content || '<p><br></p>';
+    renderStudiesList();
+};
+
+window.createNewStudy = function() {
+    const newStudy = {
+        title: "Nuevo Estudio",
+        date: new Date().toLocaleDateString(),
+        content: "<p><br></p>"
+    };
+    hashemStudies.unshift(newStudy); // Agregar al principio
+    currentStudyIndex = 0;
+    saveStudiesToLocal();
+    renderStudiesList();
+    openStudy(0);
+};
+
+window.saveCurrentStudy = function() {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
+        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
+        hashemStudies[currentStudyIndex].date = new Date().toLocaleDateString();
+        saveStudiesToLocal();
+        renderStudiesList();
+        
+        // Efecto visual de guardado
+        const saveBtn = document.querySelector('button[onclick="saveCurrentStudy()"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        saveBtn.style.background = '#27ae60';
+        setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.style.background = 'var(--accent)';
+        }, 2000);
+    }
+};
+
+window.deleteCurrentStudy = function() {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        if(confirm("¿Estás seguro de que deseas eliminar este estudio?")) {
+            hashemStudies.splice(currentStudyIndex, 1);
+            saveStudiesToLocal();
+            currentStudyIndex = hashemStudies.length > 0 ? 0 : -1;
+            
+            if (currentStudyIndex >= 0) {
+                openStudy(0);
+            } else {
+                document.getElementById('studyTitle').value = "";
+                document.getElementById('studyEditor').innerHTML = "<p><br></p>";
+                renderStudiesList();
+            }
+        }
+    }
+};
+
+window.saveStudiesToLocal = function() {
+    localStorage.setItem('hashemStudies', JSON.stringify(hashemStudies));
+};
+
+// Formato de Texto Enriquecido
+window.formatText = function(command, value = null) {
+    document.execCommand(command, false, value);
+    document.getElementById('studyEditor').focus();
+};
+
+// Auto-guardado cada 30 segundos si hay un estudio abierto
+setInterval(() => {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
+        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
+        saveStudiesToLocal();
+    }
+}, 30000);
+
+// Exportar
+window.exportStudies = function() {
+    saveCurrentStudy();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(hashemStudies, null, 2));
+    const downloadNode = document.createElement('a');
+    downloadNode.setAttribute("href", dataStr);
+    downloadNode.setAttribute("download", "mis_estudios_hashem.json");
+    document.body.appendChild(downloadNode);
+    downloadNode.click();
+    downloadNode.remove();
+};
+
+// Importar
+window.importStudies = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+                if (confirm("¿Deseas reemplazar tus estudios actuales o combinarlos? (Aceptar = Combinar, Cancelar = Reemplazar)")) {
+                    hashemStudies = hashemStudies.concat(imported);
+                } else {
+                    hashemStudies = imported;
+                }
+                saveStudiesToLocal();
+                renderStudiesList();
+                openStudy(0);
+                alert("Estudios importados correctamente.");
+            } else {
+                alert("El archivo no tiene el formato correcto.");
+            }
+        } catch(err) {
+            alert("Error al leer el archivo: " + err);
+        }
+        event.target.value = ''; // Reset
+    };
+    reader.readAsText(file);
+};

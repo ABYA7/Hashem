@@ -1,0 +1,23 @@
+[
+  {
+    "termino": "Shema",
+    "categoria": "Tanaj",
+    "fuente": "Deuteronomio 6:4",
+    "definicion": "Declaración monoteísta central del judaísmo que afirma la unicidad de Dios: \"Escucha, Israel: el Señor nuestro Dios, el Señor es uno.\"",
+    "referencias": ["Deuteronomio 6:4", "Marcos 12:29"]
+  },
+  {
+    "termino": "Kaddish",
+    "categoria": "Cultura hebrea",
+    "fuente": "Tradicción rabínica",
+    "definicion": "Oración de sanctificación y alabanza a Dios recitada en servicios religiosos y en los funerales, como muestra de respeto y recuerdo.",
+    "referencias": []
+  },
+  {
+    "termino": "Mishná",
+    "categoria": "Talmud y Mishná",
+    "fuente": "Mishná",
+    "definicion": "Colección codificada de tradiciones orales judías, base del Talmud, compuesta por seis órdenes que abarcan leyes, ética y rituales.",
+    "referencias": ["Mishná, Seder Zeraim"]
+  }
+]
