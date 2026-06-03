@@ -43,15 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Editor (Local Storage Mode)
-    const editor = document.getElementById('studyEditor');
-    const savedContent = localStorage.getItem('hashemEditorContent');
-    if (savedContent) {
-        editor.innerHTML = savedContent;
-    }
-    editor.addEventListener('input', () => {
-        localStorage.setItem('hashemEditorContent', editor.innerHTML);
-    });
+    // Inicializar Editor Avanzado
+    initStudies();
 
     // Cargar Datos
     await loadBible(currentVersion);
@@ -683,4 +676,170 @@ window.downloadDictJson = function() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+};
+
+// ==========================================
+// LÓGICA DEL EDITOR DE ESTUDIOS AVANZADO
+// ==========================================
+
+let hashemStudies = [];
+let currentStudyIndex = -1;
+
+window.initStudies = function() {
+    const savedStudies = localStorage.getItem('hashemStudies');
+    if (savedStudies) {
+        hashemStudies = JSON.parse(savedStudies);
+    } else {
+        // Migrar el contenido viejo si existe
+        const oldContent = localStorage.getItem('hashemEditorContent');
+        if (oldContent) {
+            hashemStudies.push({
+                title: "Estudio Recuperado",
+                date: new Date().toLocaleDateString(),
+                content: oldContent
+            });
+            localStorage.removeItem('hashemEditorContent');
+        }
+    }
+    renderStudiesList();
+    if (hashemStudies.length > 0) {
+        openStudy(0);
+    } else {
+        createNewStudy();
+    }
+};
+
+window.renderStudiesList = function() {
+    const list = document.getElementById('studiesList');
+    list.innerHTML = '';
+    hashemStudies.forEach((study, index) => {
+        const div = document.createElement('div');
+        div.className = `study-item ${index === currentStudyIndex ? 'active' : ''}`;
+        div.onclick = () => openStudy(index);
+        
+        div.innerHTML = `
+            <div class="study-item-title">${study.title || 'Estudio sin título'}</div>
+            <div class="study-item-date">${study.date}</div>
+        `;
+        list.appendChild(div);
+    });
+};
+
+window.openStudy = function(index) {
+    currentStudyIndex = index;
+    const study = hashemStudies[index];
+    document.getElementById('studyTitle').value = study.title;
+    document.getElementById('studyEditor').innerHTML = study.content || '<p><br></p>';
+    renderStudiesList();
+};
+
+window.createNewStudy = function() {
+    const newStudy = {
+        title: "Nuevo Estudio",
+        date: new Date().toLocaleDateString(),
+        content: "<p><br></p>"
+    };
+    hashemStudies.unshift(newStudy); // Agregar al principio
+    currentStudyIndex = 0;
+    saveStudiesToLocal();
+    renderStudiesList();
+    openStudy(0);
+};
+
+window.saveCurrentStudy = function() {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
+        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
+        hashemStudies[currentStudyIndex].date = new Date().toLocaleDateString();
+        saveStudiesToLocal();
+        renderStudiesList();
+        
+        // Efecto visual de guardado
+        const saveBtn = document.querySelector('button[onclick="saveCurrentStudy()"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        saveBtn.style.background = '#27ae60';
+        setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.style.background = 'var(--accent)';
+        }, 2000);
+    }
+};
+
+window.deleteCurrentStudy = function() {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        if(confirm("¿Estás seguro de que deseas eliminar este estudio?")) {
+            hashemStudies.splice(currentStudyIndex, 1);
+            saveStudiesToLocal();
+            currentStudyIndex = hashemStudies.length > 0 ? 0 : -1;
+            
+            if (currentStudyIndex >= 0) {
+                openStudy(0);
+            } else {
+                document.getElementById('studyTitle').value = "";
+                document.getElementById('studyEditor').innerHTML = "<p><br></p>";
+                renderStudiesList();
+            }
+        }
+    }
+};
+
+window.saveStudiesToLocal = function() {
+    localStorage.setItem('hashemStudies', JSON.stringify(hashemStudies));
+};
+
+// Formato de Texto Enriquecido
+window.formatText = function(command, value = null) {
+    document.execCommand(command, false, value);
+    document.getElementById('studyEditor').focus();
+};
+
+// Auto-guardado cada 30 segundos si hay un estudio abierto
+setInterval(() => {
+    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
+        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
+        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
+        saveStudiesToLocal();
+    }
+}, 30000);
+
+// Exportar
+window.exportStudies = function() {
+    saveCurrentStudy();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(hashemStudies, null, 2));
+    const downloadNode = document.createElement('a');
+    downloadNode.setAttribute("href", dataStr);
+    downloadNode.setAttribute("download", "mis_estudios_hashem.json");
+    document.body.appendChild(downloadNode);
+    downloadNode.click();
+    downloadNode.remove();
+};
+
+// Importar
+window.importStudies = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+                if (confirm("¿Deseas reemplazar tus estudios actuales o combinarlos? (Aceptar = Combinar, Cancelar = Reemplazar)")) {
+                    hashemStudies = hashemStudies.concat(imported);
+                } else {
+                    hashemStudies = imported;
+                }
+                saveStudiesToLocal();
+                renderStudiesList();
+                openStudy(0);
+                alert("Estudios importados correctamente.");
+            } else {
+                alert("El archivo no tiene el formato correcto.");
+            }
+        } catch(err) {
+            alert("Error al leer el archivo: " + err);
+        }
+        event.target.value = ''; // Reset
+    };
+    reader.readAsText(file);
 };

@@ -309,3 +309,60 @@ footer {
     font-size: 12px;
     border-top: 1px solid var(--border-color);
 }
+
+/* Estilos del Editor Avanzado */
+.rich-toolbar {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-right: 1px solid var(--border-color);
+    padding-right: 10px;
+}
+.toolbar-group:last-child {
+    border-right: none;
+}
+.toolbar-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 16px;
+    width: 35px;
+    height: 35px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.toolbar-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--accent);
+}
+.toolbar-select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 5px;
+    border-radius: 5px;
+    outline: none;
+}
+.study-item {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: 0.2s;
+}
+.study-item:hover, .study-item.active {
+    background: rgba(212, 175, 55, 0.1);
+    border-left: 4px solid var(--accent);
+}
+.study-item-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.study-item-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
