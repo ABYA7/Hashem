@@ -269,3 +269,22 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); }
 p { color: var(--text-secondary); }
 
 footer { text-align: center; padding: 15px; background: var(--footer-bg); font-size: 12px; border-top: 1px solid var(--border-color); letter-spacing: 1px; color: var(--text-secondary); }
+
+/* MAPAS LEAFLET */
+.custom-map-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.leaflet-popup-content-wrapper {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--accent);
+}
+.leaflet-popup-tip {
+    background: var(--bg-tertiary);
+}
+.leaflet-container {
+    background: #1a1a1a; /* Fondo oscuro por si la imagen no carga */
+}
+

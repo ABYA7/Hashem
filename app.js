@@ -49,8 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // Inicializar Editor Avanzado
+    // Inicializar Editor Avanzado y Mapas
     initStudies();
+    setTimeout(() => { if(typeof initMaps === 'function') initMaps(); }, 500);
 
     // Cargar Datos
     await loadBible(currentVersion);
@@ -1215,3 +1216,160 @@ window.importStudies = function(event) {
     reader.readAsText(file);
 };
 
+// ==========================================
+// MÓDULO 4: MAPAS INTERACTIVOS (LEAFLET)
+// ==========================================
+
+let mapInstance = null;
+let currentMapMarkers = [];
+let currentMapData = null;
+
+window.initMaps = function() {
+    if (!document.getElementById('leafletMap')) return;
+    
+    // Generar la lista de mapas en la interfaz
+    const mapsListDiv = document.getElementById('mapsList');
+    if (mapsListDiv && typeof mapsDB !== 'undefined') {
+        mapsListDiv.innerHTML = '';
+        Object.keys(mapsDB).forEach(key => {
+            const map = mapsDB[key];
+            const div = document.createElement('div');
+            div.className = 'study-item';
+            div.innerHTML = `<div class="study-item-title">${map.title}</div>`;
+            div.onclick = () => loadMap(key);
+            mapsListDiv.appendChild(div);
+        });
+        
+        // Cargar el primer mapa por defecto si Leaflet está listo
+        if (typeof L !== 'undefined') {
+            loadMap(Object.keys(mapsDB)[0]);
+        }
+    }
+};
+
+window.loadMap = function(mapId) {
+    if (typeof L === 'undefined' || typeof mapsDB === 'undefined') return;
+    
+    const mapData = mapsDB[mapId];
+    if (!mapData) return;
+    
+    currentMapData = mapData;
+    document.getElementById('currentMapTitle').innerText = mapData.title;
+    
+    // Destruir mapa anterior si existe
+    if (mapInstance !== null) {
+        mapInstance.remove();
+        mapInstance = null;
+    }
+    
+    // Crear el mapa Leaflet con CRS simple (coordenadas planas)
+    mapInstance = L.map('leafletMap', {
+        crs: L.CRS.Simple,
+        minZoom: -1,
+        maxZoom: 3
+    });
+    
+    const bounds = mapData.bounds; // ej: [[0,0], [1000,1000]]
+    
+    // Añadir imagen de fondo
+    L.imageOverlay(mapData.image, bounds).addTo(mapInstance);
+    
+    // Ajustar la vista
+    mapInstance.fitBounds(bounds);
+    
+    // Configurar el slider
+    setupTimelineSlider(mapData);
+    
+    // Dibujar marcadores iniciales (todos)
+    drawMapMarkers(100); // 100% = mostrar todos
+};
+
+function setupTimelineSlider(mapData) {
+    if (!mapData.markers || mapData.markers.length === 0) return;
+    
+    // Ordenar marcadores cronológicamente
+    mapData.markers.sort((a, b) => a.year - b.year);
+    
+    const startYear = mapData.markers[0].year;
+    const endYear = mapData.markers[mapData.markers.length - 1].year;
+    
+    document.getElementById('timelineStart').innerText = formatYear(startYear);
+    document.getElementById('timelineEnd').innerText = formatYear(endYear);
+    
+    const slider = document.getElementById('timelineSlider');
+    slider.value = 100;
+    
+    document.getElementById('timelineCurrent').innerText = formatYear(endYear);
+}
+
+window.filterMapMarkers = function(sliderValue) {
+    if (!currentMapData || !currentMapData.markers) return;
+    
+    // sliderValue va de 0 a 100.
+    const startYear = currentMapData.markers[0].year;
+    const endYear = currentMapData.markers[currentMapData.markers.length - 1].year;
+    
+    const currentYear = startYear + ((endYear - startYear) * (sliderValue / 100));
+    document.getElementById('timelineCurrent').innerText = formatYear(Math.round(currentYear));
+    
+    drawMapMarkers(sliderValue);
+};
+
+function drawMapMarkers(sliderPercentage) {
+    // Limpiar marcadores anteriores
+    currentMapMarkers.forEach(m => mapInstance.removeLayer(m));
+    currentMapMarkers = [];
+    
+    if (!currentMapData || !currentMapData.markers) return;
+    
+    // Calcular hasta qué marcador mostrar según el slider
+    const totalMarkers = currentMapData.markers.length;
+    let markersToShow = Math.ceil((sliderPercentage / 100) * totalMarkers);
+    if (markersToShow === 0 && sliderPercentage > 0) markersToShow = 1;
+    
+    // Trazar línea de ruta
+    const latlngs = [];
+    
+    for (let i = 0; i < markersToShow; i++) {
+        const markerData = currentMapData.markers[i];
+        if (!markerData) continue;
+        
+        latlngs.push(markerData.coords);
+        
+        // Crear icono personalizado simple
+        const customIcon = L.divIcon({
+            className: 'custom-map-marker',
+            html: `<div style="background: var(--accent); width: 15px; height: 15px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+            iconSize: [15, 15],
+            iconAnchor: [7.5, 7.5]
+        });
+        
+        const marker = L.marker(markerData.coords, {icon: customIcon}).addTo(mapInstance);
+        
+        // Popup
+        let popupHtml = `
+            <div style="font-family: var(--font-sans); color: #333;">
+                <h3 style="margin: 0 0 5px 0; color: #2c3e50;">${markerData.title}</h3>
+                <span style="font-size: 11px; background: #eee; padding: 2px 5px; border-radius: 3px;">${formatYear(markerData.year)}</span>
+                <p style="font-size: 13px; line-height: 1.4; margin: 10px 0;">${markerData.desc}</p>
+        `;
+        if (markerData.image) {
+            popupHtml += `<img src="${markerData.image}" style="width: 100%; border-radius: 5px; margin-top: 5px;">`;
+        }
+        popupHtml += `</div>`;
+        
+        marker.bindPopup(popupHtml);
+        currentMapMarkers.push(marker);
+    }
+    
+    // Dibujar ruta conectando puntos
+    if (latlngs.length > 1) {
+        const polyline = L.polyline(latlngs, {color: 'red', weight: 3, dashArray: '5, 10'}).addTo(mapInstance);
+        currentMapMarkers.push(polyline);
+    }
+}
+
+function formatYear(year) {
+    if (year < 0) return Math.abs(year) + ' a.C.';
+    return year + ' d.C.';
+}
