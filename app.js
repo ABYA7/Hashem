@@ -765,6 +765,14 @@ window.downloadDictJson = function() {
 let hashemStudies = [];
 let currentStudyIndex = -1;
 
+const DOC_TYPES = {
+    'nota': { icon: '📝', label: 'Nota' },
+    'sermon': { icon: '✝️', label: 'Sermón' },
+    'bosquejo': { icon: '📋', label: 'Bosquejo' },
+    'comentario': { icon: '💬', label: 'Comentario' },
+    'cuaderno': { icon: '📚', label: 'Cuaderno Temático' }
+};
+
 window.initStudies = function() {
     const savedStudies = localStorage.getItem('hashemStudies');
     if (savedStudies) {
@@ -774,81 +782,203 @@ window.initStudies = function() {
         const oldContent = localStorage.getItem('hashemEditorContent');
         if (oldContent) {
             hashemStudies.push({
+                type: 'nota',
                 title: "Estudio Recuperado",
                 date: new Date().toLocaleDateString(),
-                content: oldContent
+                content: oldContent,
+                versions: []
             });
             localStorage.removeItem('hashemEditorContent');
         }
     }
+    
+    // Asegurar que todos tengan tipo y versiones
+    hashemStudies.forEach(s => {
+        if (!s.type) s.type = 'nota';
+        if (!s.versions) s.versions = [];
+    });
+
     renderStudiesList();
     if (hashemStudies.length > 0) {
         openStudy(0);
-    } else {
-        createNewStudy();
     }
+
+    // Eventos para Estadísticas y Diccionario
+    const editor = document.getElementById('studyEditor');
+    editor.addEventListener('input', () => {
+        updateStats();
+        debouncedDictionaryCheck();
+    });
 };
 
-window.renderStudiesList = function() {
+window.renderStudiesList = function(filterText = '') {
     const list = document.getElementById('studiesList');
     list.innerHTML = '';
+    
     hashemStudies.forEach((study, index) => {
+        if (filterText && !study.title.toLowerCase().includes(filterText.toLowerCase())) return;
+
         const div = document.createElement('div');
         div.className = `study-item ${index === currentStudyIndex ? 'active' : ''}`;
         div.onclick = () => openStudy(index);
         
+        const typeInfo = DOC_TYPES[study.type] || DOC_TYPES['nota'];
+        
         div.innerHTML = `
-            <div class="study-item-title">${study.title || 'Estudio sin título'}</div>
-            <div class="study-item-date">${study.date}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span title="${typeInfo.label}">${typeInfo.icon}</span>
+                <div style="flex: 1; overflow: hidden;">
+                    <div class="study-item-title" style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${study.title || 'Sin título'}</div>
+                    <div class="study-item-date">${study.date}</div>
+                </div>
+            </div>
         `;
         list.appendChild(div);
     });
 };
 
-window.openStudy = function(index) {
-    currentStudyIndex = index;
-    const study = hashemStudies[index];
-    document.getElementById('studyTitle').value = study.title;
-    document.getElementById('studyEditor').innerHTML = study.content || '<p><br></p>';
-    renderStudiesList();
+window.filterDocuments = function() {
+    const term = document.getElementById('documentSearch').value;
+    renderStudiesList(term);
+};
+
+window.openNewDocumentModal = function() {
+    document.getElementById('newDocTitle').value = '';
+    document.getElementById('newDocumentModal').classList.add('active');
+};
+
+window.closeNewDocumentModal = function() {
+    document.getElementById('newDocumentModal').classList.remove('active');
 };
 
 window.createNewStudy = function() {
+    const title = document.getElementById('newDocTitle').value.trim() || 'Nuevo Estudio';
+    const type = document.getElementById('newDocType').value || 'nota';
+    
     const newStudy = {
-        title: "Nuevo Estudio",
+        type: type,
+        title: title,
         date: new Date().toLocaleDateString(),
-        content: "<p><br></p>"
+        content: "<p><br></p>",
+        versions: []
     };
-    hashemStudies.unshift(newStudy); // Agregar al principio
+    
+    hashemStudies.unshift(newStudy);
     currentStudyIndex = 0;
     saveStudiesToLocal();
+    closeNewDocumentModal();
     renderStudiesList();
     openStudy(0);
 };
 
-window.saveCurrentStudy = function() {
+window.openStudy = function(index) {
+    currentStudyIndex = index;
+    const study = hashemStudies[index];
+    
+    document.getElementById('studyTitle').value = study.title;
+    document.getElementById('studyEditor').innerHTML = study.content || '<p><br></p>';
+    
+    const typeInfo = DOC_TYPES[study.type] || DOC_TYPES['nota'];
+    document.getElementById('currentDocTypeIcon').innerText = typeInfo.icon;
+    document.getElementById('currentDocTypeIcon').title = typeInfo.label;
+    
+    updateVersionSelect();
+    updateStats();
+    renderStudiesList();
+};
+
+window.saveCurrentStudy = function(isManual = false) {
     if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
-        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
-        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
-        hashemStudies[currentStudyIndex].date = new Date().toLocaleDateString();
-        saveStudiesToLocal();
-        renderStudiesList();
+        const study = hashemStudies[currentStudyIndex];
+        const newTitle = document.getElementById('studyTitle').value || 'Sin título';
+        const newContent = document.getElementById('studyEditor').innerHTML;
         
-        // Efecto visual de guardado
-        const saveBtn = document.querySelector('button[onclick="saveCurrentStudy()"]');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
-        saveBtn.style.background = '#27ae60';
-        setTimeout(() => {
-            saveBtn.innerHTML = originalText;
-            saveBtn.style.background = 'var(--accent)';
-        }, 2000);
+        // Solo guardar si hay cambios reales
+        if (study.title !== newTitle || study.content !== newContent) {
+            
+            // Si es un guardado manual, creamos una versión
+            if (isManual) {
+                const verDate = new Date().toLocaleString();
+                study.versions.unshift({
+                    date: verDate,
+                    content: study.content,
+                    title: study.title
+                });
+                // Mantener máx 10 versiones
+                if (study.versions.length > 10) study.versions.pop();
+            }
+
+            study.title = newTitle;
+            study.content = newContent;
+            study.date = new Date().toLocaleDateString();
+            
+            saveStudiesToLocal();
+            renderStudiesList();
+            updateVersionSelect();
+
+            // Feedback visual
+            const status = document.getElementById('saveStatus');
+            status.innerHTML = '<i class="fas fa-check-double" style="color:#27ae60"></i> Guardado';
+            setTimeout(() => {
+                status.innerHTML = '<i class="fas fa-cloud-check"></i> Guardado';
+            }, 2000);
+        }
+    }
+};
+
+window.updateVersionSelect = function() {
+    const select = document.getElementById('versionSelect');
+    if (currentStudyIndex < 0) {
+        select.style.display = 'none';
+        return;
+    }
+    
+    const study = hashemStudies[currentStudyIndex];
+    if (!study.versions || study.versions.length === 0) {
+        select.style.display = 'none';
+        return;
+    }
+    
+    select.style.display = 'inline-block';
+    select.innerHTML = '<option value="">Restaurar Versión...</option>';
+    
+    study.versions.forEach((ver, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = ver.date;
+        select.appendChild(opt);
+    });
+};
+
+window.restoreVersion = function(verIndex) {
+    if (verIndex === "") return;
+    if (confirm("¿Seguro que deseas restaurar esta versión? Los cambios no guardados se perderán.")) {
+        const study = hashemStudies[currentStudyIndex];
+        const version = study.versions[verIndex];
+        
+        // Guardar estado actual como otra versión antes de restaurar
+        study.versions.unshift({
+            date: new Date().toLocaleString() + " (Auto antes de rest.)",
+            content: study.content,
+            title: study.title
+        });
+        
+        study.title = version.title;
+        study.content = version.content;
+        
+        document.getElementById('studyTitle').value = study.title;
+        document.getElementById('studyEditor').innerHTML = study.content;
+        document.getElementById('versionSelect').value = "";
+        
+        saveCurrentStudy(false);
+        updateStats();
+        alert("Versión restaurada.");
     }
 };
 
 window.deleteCurrentStudy = function() {
     if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
-        if(confirm("¿Estás seguro de que deseas eliminar este estudio?")) {
+        if(confirm("¿Estás seguro de que deseas eliminar este documento?")) {
             hashemStudies.splice(currentStudyIndex, 1);
             saveStudiesToLocal();
             currentStudyIndex = hashemStudies.length > 0 ? 0 : -1;
@@ -859,6 +989,8 @@ window.deleteCurrentStudy = function() {
                 document.getElementById('studyTitle').value = "";
                 document.getElementById('studyEditor').innerHTML = "<p><br></p>";
                 renderStudiesList();
+                document.getElementById('saveStatus').innerText = '';
+                document.getElementById('versionSelect').style.display = 'none';
             }
         }
     }
@@ -872,20 +1004,180 @@ window.saveStudiesToLocal = function() {
 window.formatText = function(command, value = null) {
     document.execCommand(command, false, value);
     document.getElementById('studyEditor').focus();
+    updateStats();
 };
 
-// Auto-guardado cada 30 segundos si hay un estudio abierto
-setInterval(() => {
-    if (currentStudyIndex >= 0 && currentStudyIndex < hashemStudies.length) {
-        hashemStudies[currentStudyIndex].title = document.getElementById('studyTitle').value || 'Sin título';
-        hashemStudies[currentStudyIndex].content = document.getElementById('studyEditor').innerHTML;
-        saveStudiesToLocal();
+window.insertLink = function() {
+    const url = prompt("Introduce la URL del enlace:", "https://");
+    if (url) {
+        document.execCommand("createLink", false, url);
+        // Opcional: hacer que se abra en nueva pestaña (requiere procesar el HTML)
     }
-}, 30000);
+};
 
-// Exportar
+window.insertImagePrompt = function() {
+    const url = prompt("Introduce la URL de la imagen:");
+    if (url) {
+        document.execCommand("insertImage", false, url);
+    }
+};
+
+window.insertTablePrompt = function() {
+    const rows = prompt("Número de filas:", "3");
+    const cols = prompt("Número de columnas:", "3");
+    
+    if (rows && cols && !isNaN(rows) && !isNaN(cols)) {
+        let tableHTML = '<table style="width:100%; border-collapse: collapse; margin-bottom: 15px;" border="1">';
+        for (let i = 0; i < rows; i++) {
+            tableHTML += '<tr>';
+            for (let j = 0; j < cols; j++) {
+                tableHTML += '<td style="padding: 8px; border: 1px solid var(--border-color); min-width: 50px;">Celda</td>';
+            }
+            tableHTML += '</tr>';
+        }
+        tableHTML += '</table><p><br></p>';
+        document.execCommand("insertHTML", false, tableHTML);
+    }
+};
+
+window.updateStats = function() {
+    const text = document.getElementById('studyEditor').innerText || "";
+    const charCount = text.length;
+    const wordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+    
+    document.getElementById('charCount').innerText = `${charCount} caracteres`;
+    document.getElementById('wordCount').innerText = `${wordCount} palabras`;
+};
+
+// Auto-guardado cada 20 segundos
+setInterval(() => {
+    saveCurrentStudy(false);
+}, 20000);
+
+// ==========================================
+// INTEGRACIÓN INTELIGENTE (DICCIONARIO RABÍ)
+// ==========================================
+let dictionaryTimeout;
+
+function debouncedDictionaryCheck() {
+    clearTimeout(dictionaryTimeout);
+    dictionaryTimeout = setTimeout(checkDictionaryTerms, 800);
+}
+
+function checkDictionaryTerms() {
+    if (!dictionaryDB || dictionaryDB.length === 0) return;
+    
+    const editor = document.getElementById('studyEditor');
+    const text = editor.innerText.toLowerCase();
+    
+    // Obtener la palabra en la que está el cursor si es posible
+    const selection = window.getSelection();
+    let currentWord = "";
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (range.startContainer.nodeType === Node.TEXT_NODE) {
+            const textContent = range.startContainer.textContent;
+            const offset = range.startOffset;
+            // Buscar la palabra alrededor del cursor
+            const before = textContent.slice(0, offset).match(/[\wáéíóúüñ]+$/);
+            const after = textContent.slice(offset).match(/^[\wáéíóúüñ]+/);
+            currentWord = ((before ? before[0] : "") + (after ? after[0] : "")).toLowerCase();
+        }
+    }
+    
+    let matchedArticles = [];
+    
+    // Si tenemos una palabra en el cursor, priorizarla
+    if (currentWord.length > 3) {
+        const exactMatch = dictionaryDB.find(a => a.termino.toLowerCase() === currentWord);
+        if (exactMatch) matchedArticles.push(exactMatch);
+    }
+    
+    // Si no hay match exacto en cursor, buscar otras menciones recientes o la última palabra
+    if (matchedArticles.length === 0) {
+        // Encontrar las últimas 20 palabras del editor para no escanear todo siempre
+        const words = text.split(/\s+/).filter(w => w.length > 3).slice(-20);
+        
+        for (const word of words) {
+            // Limpiar puntuación
+            const cleanWord = word.replace(/[^\wáéíóúüñ]/g, '');
+            const match = dictionaryDB.find(a => a.termino.toLowerCase() === cleanWord);
+            if (match && !matchedArticles.includes(match)) {
+                matchedArticles.push(match);
+                break; // Solo mostrar uno a la vez para no saturar
+            }
+        }
+    }
+    
+    if (matchedArticles.length > 0) {
+        showSmartPanel(matchedArticles[0]);
+    } else {
+        // No cerrar automáticamente para que el usuario pueda leer si estaba abierto
+        // closeSmartPanel(); 
+    }
+}
+
+window.showSmartPanel = function(article) {
+    const panel = document.getElementById('smartPanel');
+    const content = document.getElementById('smartPanelContent');
+    
+    let html = `
+        <h3 style="color: var(--accent); margin-bottom: 10px; font-family: var(--font-serif); font-size: 1.5em;">${article.termino}</h3>
+    `;
+    
+    if (article.nombre_hebreo) {
+        html += `<div style="font-size: 1.4em; text-align: right; margin-bottom: 10px;">${article.nombre_hebreo}</div>`;
+    }
+    
+    html += `
+        <div style="font-size: 0.9em; margin-bottom: 15px; color: var(--text-secondary);">
+            <span style="background: var(--bg-hover); padding: 2px 6px; border-radius: 4px;">${article.categoria}</span>
+        </div>
+        <p style="font-size: 0.95em; line-height: 1.5; margin-bottom: 15px;">${article.definicion}</p>
+    `;
+    
+    if (article.referencias && article.referencias.length > 0) {
+        html += `<h4 style="color: var(--accent); margin-bottom: 5px;">Referencias Bíblicas</h4>
+                 <ul style="padding-left: 20px; font-size: 0.9em; margin-bottom: 15px; color: var(--text-secondary);">`;
+        article.referencias.forEach(ref => {
+            html += `<li>${ref}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    html += `
+        <button onclick="insertDictQuote('${article.termino}')" style="width: 100%; background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 8px; border-radius: 5px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='var(--accent)'; this.style.color='#000';" onmouseout="this.style.background='transparent'; this.style.color='var(--accent)';">
+            <i class="fas fa-quote-left"></i> Insertar Cita
+        </button>
+    `;
+    
+    content.innerHTML = html;
+    panel.style.display = 'flex';
+};
+
+window.closeSmartPanel = function() {
+    document.getElementById('smartPanel').style.display = 'none';
+};
+
+window.insertDictQuote = function(termino) {
+    const article = dictionaryDB.find(a => a.termino === termino);
+    if (!article) return;
+    
+    const quoteHTML = `
+        <blockquote style="border-left: 4px solid var(--accent); padding-left: 15px; margin: 15px 0; background: var(--bg-hover); padding: 10px; border-radius: 0 8px 8px 0;">
+            <strong>${article.termino}</strong> ${article.nombre_hebreo ? '('+article.nombre_hebreo+')' : ''}: 
+            <em>"${article.definicion}"</em> 
+            <br><small style="color: var(--text-secondary);">- Diccionario Rabí</small>
+        </blockquote><p><br></p>
+    `;
+    
+    document.getElementById('studyEditor').focus();
+    document.execCommand("insertHTML", false, quoteHTML);
+};
+
+// Exportar e Importar
 window.exportStudies = function() {
-    saveCurrentStudy();
+    saveCurrentStudy(true);
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(hashemStudies, null, 2));
     const downloadNode = document.createElement('a');
     downloadNode.setAttribute("href", dataStr);
@@ -895,7 +1187,6 @@ window.exportStudies = function() {
     downloadNode.remove();
 };
 
-// Importar
 window.importStudies = function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -919,7 +1210,8 @@ window.importStudies = function(event) {
         } catch(err) {
             alert("Error al leer el archivo: " + err);
         }
-        event.target.value = ''; // Reset
+        event.target.value = '';
     };
     reader.readAsText(file);
 };
+
