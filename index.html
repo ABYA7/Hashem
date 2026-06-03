@@ -226,13 +226,82 @@
             </div>
         </div>     <!-- Módulo Editor -->
             <section id="editor" class="module">
-                <h2>Editor de Estudios Bíblicos</h2>
-                <p style="margin-bottom: 10px; color: #ccc; font-size: 14px;">(Sus notas se guardan automáticamente en el navegador)</p>
-                <div 
-                    id="studyEditor"
-                    class="editor" 
-                    contenteditable="true">
-Escriba aquí sus estudios, sermones, comentarios y notas bíblicas.
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Editor de Estudios Bíblicos</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportStudies()" style="background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-file-export"></i> Exportar</button>
+                        <input type="file" id="importStudiesFile" accept=".json" style="display: none;" onchange="importStudies(event)">
+                        <button onclick="document.getElementById('importStudiesFile').click()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-file-import"></i> Importar</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; height: calc(100vh - 200px);">
+                    <!-- Panel Izquierdo: Lista de Estudios -->
+                    <div style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column;">
+                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                            <button onclick="createNewStudy()" style="width: 100%; background: #27ae60; color: #fff; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-plus"></i> Nuevo Estudio</button>
+                        </div>
+                        <div id="studiesList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                            <!-- Los estudios se inyectarán aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Panel Derecho: Editor Rich Text -->
+                    <div style="flex: 3; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;">
+                        
+                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <input type="text" id="studyTitle" placeholder="Título del Estudio..." class="search" style="margin: 0; flex: 1; font-size: 1.2em; font-weight: bold;">
+                            <div style="display: flex; gap: 10px; margin-left: 15px;">
+                                <button onclick="saveCurrentStudy()" style="background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-save"></i> Guardar</button>
+                                <button onclick="deleteCurrentStudy()" style="background: #c0392b; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Toolbar -->
+                        <div class="rich-toolbar" style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 10px; background: var(--bg-secondary);">
+                            <div class="toolbar-group">
+                                <select onchange="formatText('fontName', this.value)" class="toolbar-select">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">Times New</option>
+                                    <option value="Courier New">Courier</option>
+                                    <option value="Georgia">Georgia</option>
+                                </select>
+                                <select onchange="formatText('fontSize', this.value)" class="toolbar-select">
+                                    <option value="1">Pequeño</option>
+                                    <option value="3" selected>Normal</option>
+                                    <option value="5">Grande</option>
+                                    <option value="7">Enorme</option>
+                                </select>
+                            </div>
+                            
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('bold')" title="Negrita"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')" title="Cursiva"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('underline')" title="Subrayado"><i class="fas fa-underline"></i></button>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="Alinear Izquierda"><i class="fas fa-align-left"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="Centrar"><i class="fas fa-align-center"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('justifyRight')" title="Alinear Derecha"><i class="fas fa-align-right"></i></button>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Lista Viñetas"><i class="fas fa-list-ul"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="Lista Numerada"><i class="fas fa-list-ol"></i></button>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <input type="color" onchange="formatText('foreColor', this.value)" title="Color de Texto" style="height: 30px; width: 30px; border: none; cursor: pointer; padding: 0;">
+                                <input type="color" value="#ffff00" onchange="formatText('hiliteColor', this.value)" title="Color de Resaltado" style="height: 30px; width: 30px; border: none; cursor: pointer; padding: 0;">
+                            </div>
+                        </div>
+
+                        <!-- Área de edición -->
+                        <div id="studyEditor" class="editor-area" contenteditable="true" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--bg-primary); color: var(--text-primary); font-family: Arial, sans-serif; font-size: 16px; outline: none;">
+                            <p><br></p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
