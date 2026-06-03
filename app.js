@@ -23,25 +23,31 @@ let currentVersion = 'rv1909';
 let activeVerseId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Tema Claro/Oscuro
-    const savedTheme = localStorage.getItem('hashemTheme');
-    if (savedTheme === 'light') {
-        document.body.classList.add('light-mode');
-        document.querySelector('.theme-toggle i').classList.replace('fa-moon', 'fa-sun');
+    // ── Sistema de 4 Temas ─────────────────────────────────
+    const themes = ['dark', 'light', 'gray', 'blue'];
+    const themeClasses = { dark: '', light: 'light-mode', gray: 'gray-mode', blue: 'blue-mode' };
+
+    function applyTheme(theme) {
+        // Quitar todas las clases de tema
+        document.body.classList.remove('light-mode', 'gray-mode', 'blue-mode');
+        // Añadir la clase correcta (dark no tiene clase, es el default)
+        if (themeClasses[theme]) document.body.classList.add(themeClasses[theme]);
+        // Actualizar punto activo
+        document.querySelectorAll('.theme-dot').forEach(dot => {
+            dot.classList.toggle('active', dot.dataset.theme === theme);
+        });
+        localStorage.setItem('hashemTheme', theme);
     }
-    
-    document.getElementById('themeToggle').addEventListener('click', (e) => {
-        const body = document.body;
-        const icon = e.currentTarget.querySelector('i');
-        body.classList.toggle('light-mode');
-        if (body.classList.contains('light-mode')) {
-            localStorage.setItem('hashemTheme', 'light');
-            icon.classList.replace('fa-moon', 'fa-sun');
-        } else {
-            localStorage.setItem('hashemTheme', 'dark');
-            icon.classList.replace('fa-sun', 'fa-moon');
-        }
+
+    // Cargar tema guardado
+    const savedTheme = localStorage.getItem('hashemTheme') || 'dark';
+    applyTheme(savedTheme);
+
+    // Clicks en los puntos de color
+    document.querySelectorAll('.theme-dot').forEach(dot => {
+        dot.addEventListener('click', () => applyTheme(dot.dataset.theme));
     });
+
 
     // Inicializar Editor Avanzado
     initStudies();
