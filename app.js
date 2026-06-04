@@ -1238,7 +1238,7 @@ window.initMaps = function() {
             const map = mapsDB[key];
             const div = document.createElement('div');
             div.className = 'study-item';
-            div.innerHTML = `<div class="study-item-title">${map.title}</div>`;
+            div.innerHTML = `<div class="study-item-title" style="color: ${map.color || 'var(--accent)'}; border-left: 4px solid ${map.color || 'transparent'}; padding-left: 8px;"><i class="fas fa-map"></i> ${map.title}</div>`;
             div.onclick = () => loadMap(key);
             mapsListDiv.appendChild(div);
         });
@@ -1342,8 +1342,8 @@ function drawMapMarkers(sliderPercentage) {
         // Crear icono personalizado simple
         const customIcon = L.divIcon({
             className: 'custom-map-marker',
-            html: `<div style="background: var(--accent); width: 15px; height: 15px; border-radius: 50%; border: 2px solid #000; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-            iconSize: [15, 15],
+            html: `<div style="background: ${currentMapData.color || 'var(--accent)'}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>`,
+            iconSize: [16, 16],
             iconAnchor: [7.5, 7.5]
         });
         
@@ -1367,7 +1367,7 @@ function drawMapMarkers(sliderPercentage) {
     
     // Dibujar ruta conectando puntos
     if (latlngs.length > 1) {
-        const polyline = L.polyline(latlngs, {color: 'red', weight: 3, dashArray: '5, 10'}).addTo(mapInstance);
+        const polyline = L.polyline(latlngs, {color: currentMapData.color || 'red', weight: 4, dashArray: '5, 10'}).addTo(mapInstance);
         currentMapMarkers.push(polyline);
     }
 }

@@ -1,8 +1,9 @@
 const mapsDB = {
     "abraham": {
         "title": "Viajes de Abraham",
+        "color": "#27ae60",
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Ancient_Near_East_topographical_map.png/1024px-Ancient_Near_East_topographical_map.png",
-        "bounds": [[0, 0], [1000, 1000]], // Virtual coordinate system Y, X
+        "bounds": [[0, 0], [1000, 1000]],
         "markers": [
             { "id": 1, "coords": [750, 850], "title": "Ur de los Caldeos", "desc": "Ciudad de origen de Abram. Dios lo llama a dejar su tierra y su parentela.", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Ziggurat_of_Ur.jpg/400px-Ziggurat_of_Ur.jpg", "year": -2090 },
             { "id": 2, "coords": [900, 500], "title": "Harán", "desc": "Lugar donde se asienta la familia de Taré y donde este muere. Abram parte desde aquí a los 75 años.", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Harran_ruins.jpg/400px-Harran_ruins.jpg", "year": -2085 },
@@ -15,6 +16,7 @@ const mapsDB = {
     },
     "exodo": {
         "title": "Éxodo de Israel",
+        "color": "#2980b9",
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Route_of_the_Exodus.svg/1024px-Route_of_the_Exodus.svg.png",
         "bounds": [[0, 0], [1000, 1000]],
         "markers": [
@@ -27,6 +29,7 @@ const mapsDB = {
     },
     "josue": {
         "title": "Conquistas de Josué",
+        "color": "#8e44ad",
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Map_of_ancient_Israel_and_Judah.png/800px-Map_of_ancient_Israel_and_Judah.png",
         "bounds": [[0, 0], [1000, 1000]],
         "markers": [
@@ -39,6 +42,7 @@ const mapsDB = {
     },
     "david": {
         "title": "Reino de David",
+        "color": "#f39c12",
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Map_of_ancient_Israel_and_Judah.png/800px-Map_of_ancient_Israel_and_Judah.png",
         "bounds": [[0, 0], [1000, 1000]],
         "markers": [
@@ -51,6 +55,7 @@ const mapsDB = {
     },
     "pablo": {
         "title": "Viajes Misioneros de Pablo",
+        "color": "#c0392b",
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Paul%27s_Journeys.jpg/1024px-Paul%27s_Journeys.jpg",
         "bounds": [[0, 0], [1000, 1000]],
         "markers": [
