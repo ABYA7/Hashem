@@ -400,7 +400,7 @@ function goToSearchResult(bookIndex, chapterIndex, verseIndex) {
 function showModule(id, element) {
     document.querySelectorAll('.module').forEach(module => {
         module.classList.remove('active');
-        if (module.id === 'ai') {
+        if (module.id === 'ai' || module.id === 'multimedia') {
             module.style.display = 'none';
         }
     });
@@ -420,7 +420,7 @@ function showModule(id, element) {
     const targetModule = document.getElementById(id);
     if (targetModule) {
         targetModule.classList.add('active');
-        if (id === 'ai') {
+        if (id === 'ai' || id === 'multimedia') {
             targetModule.style.display = 'flex';
         }
     }

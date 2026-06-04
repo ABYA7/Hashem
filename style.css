@@ -543,3 +543,6 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
 .active-media-cat { background: var(--bg-hover); border-left-color: var(--accent); }
 .audio-player-container { display: flex; align-items: center; background: var(--bg-primary); padding: 10px; border-radius: 8px; margin-top: 10px; }
 
+
+#multimedia.module.active { display: flex !important; flex-direction: row; gap: 20px; height: calc(100vh - 140px); }
+
