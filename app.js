@@ -400,13 +400,30 @@ function goToSearchResult(bookIndex, chapterIndex, verseIndex) {
 function showModule(id, element) {
     document.querySelectorAll('.module').forEach(module => {
         module.classList.remove('active');
+        if (module.id === 'ai') {
+            module.style.display = 'none';
+        }
     });
 
     document.querySelectorAll('.menu li').forEach(item => {
         item.classList.remove('active-nav');
     });
 
-    document.getElementById(id).classList.add('active');
+    try {
+        if (typeof closeSmartPanel === 'function') {
+            closeSmartPanel();
+        }
+    } catch (e) {
+        console.error("Error closing smart panel:", e);
+    }
+
+    const targetModule = document.getElementById(id);
+    if (targetModule) {
+        targetModule.classList.add('active');
+        if (id === 'ai') {
+            targetModule.style.display = 'flex';
+        }
+    }
 
     if (element) {
         element.classList.add('active-nav');
@@ -1609,3 +1626,77 @@ function generateAiResponse(prompt) {
         <p>Por favor, intenta usar alguna de esas sugerencias, o haz clic en los botones del panel izquierdo.</p>
     `;
 }
+
+// ====== SISTEMA MULTIMEDIA ======
+window.renderMultimediaCategory = function(category, element) {
+    // Update active nav state
+    const items = document.querySelectorAll('#multimedia .study-item');
+    items.forEach(item => item.classList.remove('active-media-cat'));
+    if (element) element.classList.add('active-media-cat');
+
+    const grid = document.getElementById('mediaGrid');
+    const title = document.getElementById('mediaTitle');
+    grid.innerHTML = '';
+
+    const data = multimediaDB[category];
+    if (!data) return;
+
+    // Update title
+    const titles = {
+        'imagenes': 'Imágenes Bíblicas',
+        'ilustraciones': 'Ilustraciones',
+        'videos': 'Videos',
+        'audio_biblias': 'Audio Biblias',
+        'pronunciacion_hebrea': 'Pronunciación Hebrea',
+        'pronunciacion_griega': 'Pronunciación Griega'
+    };
+    title.innerText = titles[category] || 'Multimedia';
+
+    data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        
+        if (category === 'imagenes' || category === 'ilustraciones') {
+            card.innerHTML = `
+                <img src="${item.url}" alt="${item.title}" class="media-img">
+                <div class="media-info">
+                    <div class="media-title">${item.title}</div>
+                    <div class="media-desc">${item.desc}</div>
+                </div>
+            `;
+            card.onclick = () => window.open(item.url, '_blank');
+        } else if (category === 'videos') {
+            card.innerHTML = `
+                <video controls width="100%" poster="${item.poster || ''}" class="media-img" style="background:#000;">
+                    <source src="${item.url}" type="video/mp4">
+                </video>
+                <div class="media-info">
+                    <div class="media-title">${item.title}</div>
+                    <div class="media-desc">${item.desc}</div>
+                </div>
+            `;
+        } else {
+            // Audios
+            card.innerHTML = `
+                <div class="media-info">
+                    <div class="media-title"><i class="fas ${category.includes('pronunciacion') ? 'fa-volume-up' : 'fa-headphones'}"></i> ${item.title}</div>
+                    <div class="media-desc">${item.desc}</div>
+                    <div class="audio-player-container">
+                        <audio controls style="width: 100%; height: 30px;">
+                            <source src="${item.url}" type="audio/mpeg">
+                        </audio>
+                    </div>
+                </div>
+            `;
+        }
+        
+        grid.appendChild(card);
+    });
+};
+
+// Initialize default multimedia category on load
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.renderMultimediaCategory) {
+        renderMultimediaCategory('imagenes');
+    }
+});
