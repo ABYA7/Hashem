@@ -1608,6 +1608,200 @@ function generateAiResponse(prompt) {
             </ul>
         `;
     }
+    timelineDB.forEach(event => {
+        if (filterCategory !== 'all' && event.category !== filterCategory) return;
+        
+        const card = document.createElement('div');
+        card.className = `timeline-card-container ${isLeft ? 'left' : 'right'} cat-${event.category}`;
+        
+        let icon = '<i class="fas fa-calendar-day"></i>';
+        if(event.category === 'rey') icon = '<i class="fas fa-crown"></i>';
+        if(event.category === 'profeta') icon = '<i class="fas fa-scroll"></i>';
+        if(event.category === 'imperio') icon = '<i class="fas fa-landmark"></i>';
+        
+        card.innerHTML = `
+            <div class="timeline-card">
+                <h3>
+                    <span>${icon} ${event.title}</span>
+                    <span class="timeline-year">${event.yearLabel}</span>
+                </h3>
+                <p class="timeline-desc">${event.desc}</p>
+                ${event.sync ? `<div class="timeline-sync"><i class="fas fa-globe"></i> ${event.sync}</div>` : ''}
+            </div>
+        `;
+        
+        container.appendChild(card);
+        isLeft = !isLeft; // Alternar lado
+    });
+};
+
+window.filterTimeline = function(category) {
+    // Actualizar botones
+    document.querySelectorAll('.timeline-filters .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === category);
+    });
+    
+    // Renderizar
+    renderTimeline(category);
+};
+// ==========================================
+// MÓDULO 6: HASHEM AI (CEREBRO SIMULADO)
+// ==========================================
+
+window.insertAiPrompt = function(promptText) {
+    const input = document.getElementById('aiInput');
+    if (input) {
+        input.value = promptText;
+        input.focus();
+    }
+};
+
+window.handleAiKeyPress = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendAiMessage();
+    }
+};
+
+window.sendAiMessage = function() {
+    const input = document.getElementById('aiInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    appendAiMessage(text, 'user');
+
+    // Simular el retraso de "Pensando..."
+    const typingId = showAiTyping();
+    
+    setTimeout(() => {
+        removeAiTyping(typingId);
+        const response = generateAiResponse(text);
+        appendAiMessage(response, 'ai-system');
+    }, 1500 + Math.random() * 1000); // 1.5 a 2.5 segundos de "pensamiento"
+};
+
+function appendAiMessage(htmlContent, senderClass) {
+    const chatHistory = document.getElementById('aiChatHistory');
+    if (!chatHistory) return;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-message ${senderClass}`;
+    
+    let icon = senderClass === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+    
+    // Si el contenido es del usuario, escapar HTML. Si es de la IA, permitir HTML.
+    let finalContent = htmlContent;
+    if (senderClass === 'user') {
+        finalContent = `<p>${escapeHtml(htmlContent)}</p>`;
+    }
+
+    msgDiv.innerHTML = `
+        <div class="ai-avatar">${icon}</div>
+        <div class="ai-bubble">
+            ${finalContent}
+        </div>
+    `;
+
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function showAiTyping() {
+    const chatHistory = document.getElementById('aiChatHistory');
+    const id = 'typing-' + Date.now();
+    const typingDiv = document.createElement('div');
+    typingDiv.id = id;
+    typingDiv.className = `ai-message ai-system`;
+    typingDiv.innerHTML = `
+        <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+        <div class="ai-bubble">
+            <div class="ai-typing">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    chatHistory.appendChild(typingDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    return id;
+}
+
+function removeAiTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+// LÓGICA DEL CEREBRO DE HASHEM AI
+function generateAiResponse(prompt) {
+    const lowerPrompt = prompt.toLowerCase();
+
+    if (lowerPrompt.includes("sermón") || lowerPrompt.includes("bosquejo")) {
+        return `
+            <p><strong>📝 Bosquejo de Sermón Generado: La Fe que Vence (Hebreos 11)</strong></p>
+            <p><strong>Introducción:</strong><br>
+            La fe no es solo creer que Dios existe, es actuar con la certeza de que Él cumplirá sus promesas, incluso cuando no vemos la salida (Hebreos 11:1).</p>
+            <p><strong>Puntos Principales:</strong></p>
+            <ol>
+                <li><strong>La fe nos justifica:</strong> Como Abel, quien ofreció un sacrificio excelente motivado por la fe (Hebreos 11:4).</li>
+                <li><strong>La fe camina con Dios:</strong> Como Enoc, quien agradó a Dios en medio de una generación perversa (Hebreos 11:5).</li>
+                <li><strong>La fe obedece lo ilógico:</strong> Como Noé, quien construyó un arca cuando nunca había llovido, confiando en la advertencia divina (Hebreos 11:7).</li>
+                <li><strong>La fe sacrifica lo más preciado:</strong> Como Abraham, quien estuvo dispuesto a ofrecer a Isaac, sabiendo que Dios es poderoso para resucitar (Hebreos 11:17-19).</li>
+            </ol>
+            <p><strong>Conclusión:</strong><br>
+            La fe verdadera no evita los problemas, pero nos da la victoria sobre ellos. ¿Estamos caminando por vista o por fe?</p>
+        `;
+    }
+
+    if (lowerPrompt.includes("hebreo") || lowerPrompt.includes("jessed") || lowerPrompt.includes("hesed")) {
+        return `
+            <p><strong>📚 Análisis de Palabra Hebrea: חֶסֶד (Hesed)</strong></p>
+            <p>La palabra hebrea <em>Hesed</em> (Strong H2617) es uno de los términos teológicos más ricos del Antiguo Testamento. Es difícil traducirla con una sola palabra en español.</p>
+            <ul>
+                <li><strong>Significado literal:</strong> Bondad, misericordia, amor leal, piedad.</li>
+                <li><strong>Uso en el Tanaj:</strong> Aparece más de 240 veces. Se usa frecuentemente para describir el compromiso inquebrantable de Dios con su pacto.</li>
+                <li><strong>Diferencia con el amor común:</strong> A diferencia del amor emocional, <em>Hesed</em> siempre está ligado a una acción fiel basada en un pacto. Es una bondad que no se merece pero que se da porque quien la otorga ha prometido ser fiel.</li>
+            </ul>
+            <p><strong>Cita clave:</strong> "El Señor, el Señor, Dios clemente y compasivo, lento para la ira y grande en amor (<em>Hesed</em>) y fidelidad" (Éxodo 34:6).</p>
+        `;
+    }
+
+    if (lowerPrompt.includes("profecía") || lowerPrompt.includes("isaías") || lowerPrompt.includes("mesías")) {
+        return `
+            <p><strong>📜 Profecías y Cumplimiento: El Siervo Sufriente (Isaías 53)</strong></p>
+            <p>El capítulo 53 de Isaías es conocido como el "Santo de los Santos" del Antiguo Testamento. Escrito unos 700 años antes de Cristo, describe con asombrosa precisión el ministerio, muerte y exaltación del Mesías.</p>
+            <ul>
+                <li><strong>Profecía:</strong> Fue despreciado y desechado (Is 53:3).<br>
+                <strong>Cumplimiento:</strong> Juan 1:11 ("A lo suyo vino, y los suyos no le recibieron").</li>
+                <li><strong>Profecía:</strong> Guardó silencio ante sus acusadores (Is 53:7).<br>
+                <strong>Cumplimiento:</strong> Mateo 27:12-14 (Jesús no respondió a Pilato).</li>
+                <li><strong>Profecía:</strong> Traspasado por nuestras rebeliones (Is 53:5).<br>
+                <strong>Cumplimiento:</strong> Juan 19:34 (El costado traspasado por la lanza romana).</li>
+                <li><strong>Profecía:</strong> Asignado con los impíos y enterrado con el rico (Is 53:9).<br>
+                <strong>Cumplimiento:</strong> Mateo 27:38, 57-60 (Crucificado entre ladrones, enterrado en la tumba de José de Arimatea).</li>
+            </ul>
+        `;
+    }
+
+    if (lowerPrompt.includes("cronología") || lowerPrompt.includes("tiempo") || lowerPrompt.includes("moisés")) {
+        return `
+            <p><strong>⏳ Línea de Tiempo: La vida de Moisés (120 años)</strong></p>
+            <p>La vida de Moisés se divide clásicamente en tres períodos de 40 años (Hechos 7):</p>
+            <ul>
+                <li><strong>Primeros 40 años (El Príncipe):</strong> Moisés nace, es salvado de las aguas y educado en toda la sabiduría de Egipto como hijo de la hija de Faraón (Hechos 7:22-23). Termina con su huida tras matar a un egipcio.</li>
+                <li><strong>Segundos 40 años (El Pastor):</strong> Moisés huye a Madián. Se casa con Séfora, tiene hijos y pastorea ovejas en el desierto. Dios está quebrando su orgullo egipcio. Termina con la aparición de la zarza ardiente en Horeb (Éxodo 3).</li>
+                <li><strong>Últimos 40 años (El Libertador):</strong> Moisés regresa a Egipto, enfrenta a Faraón (Las 10 plagas), lidera el Éxodo, recibe la Ley en el Sinaí y guía a Israel por el desierto. Muere a los 120 años en el Monte Nebo, con sus ojos nunca oscurecidos y su vigor intacto (Deuteronomio 34:7).</li>
+            </ul>
+        `;
+    }
 
     if (lowerPrompt.includes("hola") || lowerPrompt.includes("saludo") || lowerPrompt.includes("shalom")) {
         return `<p>¡Shalom! Bendiciones. ¿En qué tema bíblico, palabra original o estudio puedo asistirte el día de hoy?</p>`;
@@ -1628,18 +1822,34 @@ function generateAiResponse(prompt) {
 }
 
 // ====== SISTEMA MULTIMEDIA ======
+let currentMultimediaCategory = 'imagenes';
+
 window.renderMultimediaCategory = function(category, element) {
+    currentMultimediaCategory = category;
+    
     // Update active nav state
     const items = document.querySelectorAll('#multimedia .study-item');
     items.forEach(item => item.classList.remove('active-media-cat'));
-    if (element) element.classList.add('active-media-cat');
+    
+    if (element) {
+        element.classList.add('active-media-cat');
+    } else {
+        // If element not provided (e.g. on load), find the right one
+        const allItems = Array.from(items);
+        const activeItem = allItems.find(i => i.getAttribute('onclick').includes(category));
+        if (activeItem) activeItem.classList.add('active-media-cat');
+    }
 
     const grid = document.getElementById('mediaGrid');
     const title = document.getElementById('mediaTitle');
     grid.innerHTML = '';
 
-    const data = multimediaDB[category];
-    if (!data) return;
+    // Load default and custom data
+    let data = multimediaDB[category] || [];
+    const customData = JSON.parse(localStorage.getItem('customMultimedia') || '{}');
+    if (customData[category]) {
+        data = data.concat(customData[category]);
+    }
 
     // Update title
     const titles = {
@@ -1652,13 +1862,18 @@ window.renderMultimediaCategory = function(category, element) {
     };
     title.innerText = titles[category] || 'Multimedia';
 
+    if (!data || data.length === 0) {
+        grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1;">No hay elementos en esta categoría.</p>';
+        return;
+    }
+
     data.forEach(item => {
         const card = document.createElement('div');
         card.className = 'media-card';
         
         if (category === 'imagenes' || category === 'ilustraciones') {
             card.innerHTML = `
-                <img src="${item.url}" alt="${item.title}" class="media-img">
+                <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.src='https://via.placeholder.com/800x600?text=Error+cargando+imagen'">
                 <div class="media-info">
                     <div class="media-title">${item.title}</div>
                     <div class="media-desc">${item.desc}</div>
@@ -1692,6 +1907,80 @@ window.renderMultimediaCategory = function(category, element) {
         
         grid.appendChild(card);
     });
+};
+
+window.abrirModalMultimedia = function() {
+    document.getElementById('modalMultimedia').style.display = 'flex';
+    document.getElementById('addMediaTitle').value = '';
+    document.getElementById('addMediaDesc').value = '';
+    document.getElementById('addMediaUrl').value = '';
+    document.getElementById('addMediaCat').value = currentMultimediaCategory;
+};
+
+window.cerrarModalMultimedia = function() {
+    document.getElementById('modalMultimedia').style.display = 'none';
+};
+
+window.guardarMultimedia = function() {
+    const title = document.getElementById('addMediaTitle').value.trim();
+    const desc = document.getElementById('addMediaDesc').value.trim();
+    const urlField = document.getElementById('addMediaUrl').value.trim();
+    const fileInput = document.getElementById('addMediaFile');
+    const cat = document.getElementById('addMediaCat').value;
+
+    if (!title) {
+        alert("Por favor ingresa un título.");
+        return;
+    }
+
+    // Helper to actually save after we have the final URL (either from file or external URL)
+    const saveItem = (finalUrl) => {
+        if (!finalUrl) {
+            alert("No se ha proporcionado una URL válida ni un archivo.");
+            return;
+        }
+        const newItem = {
+            id: Date.now(),
+            title: title,
+            desc: desc,
+            url: finalUrl
+        };
+        let customData = JSON.parse(localStorage.getItem('customMultimedia') || '{}');
+        if (!customData[cat]) {
+            customData[cat] = [];
+        }
+        customData[cat].push(newItem);
+        localStorage.setItem('customMultimedia', JSON.stringify(customData));
+        cerrarModalMultimedia();
+        renderMultimediaCategory(currentMultimediaCategory);
+        alert("¡Contenido añadido con éxito!");
+    };
+
+    // If a file is selected, read it as DataURL
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        // 5 MB limit
+        if (file.size > 5 * 1024 * 1024) {
+            alert("El archivo excede el límite de 5 MB. Por favor elige un archivo más pequeño.");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result; // base64 data URL
+            saveItem(dataUrl);
+        };
+        reader.onerror = function() {
+            alert("Error al leer el archivo.");
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // No file selected, use URL field (could be empty)
+        if (!urlField) {
+            alert("Debes proporcionar una URL o seleccionar un archivo.");
+            return;
+        }
+        saveItem(urlField);
+    }
 };
 
 // Initialize default multimedia category on load
