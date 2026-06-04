@@ -51,7 +51,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializar Editor Avanzado y Mapas
     initStudies();
-    setTimeout(() => { if(typeof initMaps === 'function') initMaps(); }, 500);
+    setTimeout(() => { 
+        if(typeof initMaps === 'function') initMaps(); 
+        if(typeof initTimeline === 'function') initTimeline();
+    }, 500);
 
     // Cargar Datos
     await loadBible(currentVersion);
@@ -1373,3 +1376,60 @@ function formatYear(year) {
     if (year < 0) return Math.abs(year) + ' a.C.';
     return year + ' d.C.';
 }
+// ==========================================
+// MÓDULO 5: CRONOLOGÍA INTERACTIVA
+// ==========================================
+
+window.initTimeline = function() {
+    if (!document.getElementById('timelineContainer') || typeof timelineDB === 'undefined') return;
+    
+    // Ordenar de más antiguo a más reciente
+    timelineDB.sort((a, b) => a.year - b.year);
+    
+    renderTimeline('all');
+};
+
+window.renderTimeline = function(filterCategory) {
+    const container = document.getElementById('timelineContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    let isLeft = true;
+    
+    timelineDB.forEach(event => {
+        if (filterCategory !== 'all' && event.category !== filterCategory) return;
+        
+        const card = document.createElement('div');
+        card.className = `timeline-card-container ${isLeft ? 'left' : 'right'} cat-${event.category}`;
+        
+        let icon = '<i class="fas fa-calendar-day"></i>';
+        if(event.category === 'rey') icon = '<i class="fas fa-crown"></i>';
+        if(event.category === 'profeta') icon = '<i class="fas fa-scroll"></i>';
+        if(event.category === 'imperio') icon = '<i class="fas fa-landmark"></i>';
+        
+        card.innerHTML = `
+            <div class="timeline-card">
+                <h3>
+                    <span>${icon} ${event.title}</span>
+                    <span class="timeline-year">${event.yearLabel}</span>
+                </h3>
+                <p class="timeline-desc">${event.desc}</p>
+                ${event.sync ? `<div class="timeline-sync"><i class="fas fa-globe"></i> ${event.sync}</div>` : ''}
+            </div>
+        `;
+        
+        container.appendChild(card);
+        isLeft = !isLeft; // Alternar lado
+    });
+};
+
+window.filterTimeline = function(category) {
+    // Actualizar botones
+    document.querySelectorAll('.timeline-filters .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === category);
+    });
+    
+    // Renderizar
+    renderTimeline(category);
+};
