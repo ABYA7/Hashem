@@ -1433,3 +1433,179 @@ window.filterTimeline = function(category) {
     // Renderizar
     renderTimeline(category);
 };
+// ==========================================
+// MÓDULO 6: HASHEM AI (CEREBRO SIMULADO)
+// ==========================================
+
+window.insertAiPrompt = function(promptText) {
+    const input = document.getElementById('aiInput');
+    if (input) {
+        input.value = promptText;
+        input.focus();
+    }
+};
+
+window.handleAiKeyPress = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendAiMessage();
+    }
+};
+
+window.sendAiMessage = function() {
+    const input = document.getElementById('aiInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    appendAiMessage(text, 'user');
+
+    // Simular el retraso de "Pensando..."
+    const typingId = showAiTyping();
+    
+    setTimeout(() => {
+        removeAiTyping(typingId);
+        const response = generateAiResponse(text);
+        appendAiMessage(response, 'ai-system');
+    }, 1500 + Math.random() * 1000); // 1.5 a 2.5 segundos de "pensamiento"
+};
+
+function appendAiMessage(htmlContent, senderClass) {
+    const chatHistory = document.getElementById('aiChatHistory');
+    if (!chatHistory) return;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-message ${senderClass}`;
+    
+    let icon = senderClass === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+    
+    // Si el contenido es del usuario, escapar HTML. Si es de la IA, permitir HTML.
+    let finalContent = htmlContent;
+    if (senderClass === 'user') {
+        finalContent = `<p>${escapeHtml(htmlContent)}</p>`;
+    }
+
+    msgDiv.innerHTML = `
+        <div class="ai-avatar">${icon}</div>
+        <div class="ai-bubble">
+            ${finalContent}
+        </div>
+    `;
+
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function showAiTyping() {
+    const chatHistory = document.getElementById('aiChatHistory');
+    const id = 'typing-' + Date.now();
+    const typingDiv = document.createElement('div');
+    typingDiv.id = id;
+    typingDiv.className = `ai-message ai-system`;
+    typingDiv.innerHTML = `
+        <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+        <div class="ai-bubble">
+            <div class="ai-typing">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    chatHistory.appendChild(typingDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    return id;
+}
+
+function removeAiTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+// LÓGICA DEL CEREBRO DE HASHEM AI
+function generateAiResponse(prompt) {
+    const lowerPrompt = prompt.toLowerCase();
+
+    if (lowerPrompt.includes("sermón") || lowerPrompt.includes("bosquejo")) {
+        return `
+            <p><strong>📝 Bosquejo de Sermón Generado: La Fe que Vence (Hebreos 11)</strong></p>
+            <p><strong>Introducción:</strong><br>
+            La fe no es solo creer que Dios existe, es actuar con la certeza de que Él cumplirá sus promesas, incluso cuando no vemos la salida (Hebreos 11:1).</p>
+            <p><strong>Puntos Principales:</strong></p>
+            <ol>
+                <li><strong>La fe nos justifica:</strong> Como Abel, quien ofreció un sacrificio excelente motivado por la fe (Hebreos 11:4).</li>
+                <li><strong>La fe camina con Dios:</strong> Como Enoc, quien agradó a Dios en medio de una generación perversa (Hebreos 11:5).</li>
+                <li><strong>La fe obedece lo ilógico:</strong> Como Noé, quien construyó un arca cuando nunca había llovido, confiando en la advertencia divina (Hebreos 11:7).</li>
+                <li><strong>La fe sacrifica lo más preciado:</strong> Como Abraham, quien estuvo dispuesto a ofrecer a Isaac, sabiendo que Dios es poderoso para resucitar (Hebreos 11:17-19).</li>
+            </ol>
+            <p><strong>Conclusión:</strong><br>
+            La fe verdadera no evita los problemas, pero nos da la victoria sobre ellos. ¿Estamos caminando por vista o por fe?</p>
+        `;
+    }
+
+    if (lowerPrompt.includes("hebreo") || lowerPrompt.includes("jessed") || lowerPrompt.includes("hesed")) {
+        return `
+            <p><strong>📚 Análisis de Palabra Hebrea: חֶסֶד (Hesed)</strong></p>
+            <p>La palabra hebrea <em>Hesed</em> (Strong H2617) es uno de los términos teológicos más ricos del Antiguo Testamento. Es difícil traducirla con una sola palabra en español.</p>
+            <ul>
+                <li><strong>Significado literal:</strong> Bondad, misericordia, amor leal, piedad.</li>
+                <li><strong>Uso en el Tanaj:</strong> Aparece más de 240 veces. Se usa frecuentemente para describir el compromiso inquebrantable de Dios con su pacto.</li>
+                <li><strong>Diferencia con el amor común:</strong> A diferencia del amor emocional, <em>Hesed</em> siempre está ligado a una acción fiel basada en un pacto. Es una bondad que no se merece pero que se da porque quien la otorga ha prometido ser fiel.</li>
+            </ul>
+            <p><strong>Cita clave:</strong> "El Señor, el Señor, Dios clemente y compasivo, lento para la ira y grande en amor (<em>Hesed</em>) y fidelidad" (Éxodo 34:6).</p>
+        `;
+    }
+
+    if (lowerPrompt.includes("profecía") || lowerPrompt.includes("isaías") || lowerPrompt.includes("mesías")) {
+        return `
+            <p><strong>📜 Profecías y Cumplimiento: El Siervo Sufriente (Isaías 53)</strong></p>
+            <p>El capítulo 53 de Isaías es conocido como el "Santo de los Santos" del Antiguo Testamento. Escrito unos 700 años antes de Cristo, describe con asombrosa precisión el ministerio, muerte y exaltación del Mesías.</p>
+            <ul>
+                <li><strong>Profecía:</strong> Fue despreciado y desechado (Is 53:3).<br>
+                <strong>Cumplimiento:</strong> Juan 1:11 ("A lo suyo vino, y los suyos no le recibieron").</li>
+                <li><strong>Profecía:</strong> Guardó silencio ante sus acusadores (Is 53:7).<br>
+                <strong>Cumplimiento:</strong> Mateo 27:12-14 (Jesús no respondió a Pilato).</li>
+                <li><strong>Profecía:</strong> Traspasado por nuestras rebeliones (Is 53:5).<br>
+                <strong>Cumplimiento:</strong> Juan 19:34 (El costado traspasado por la lanza romana).</li>
+                <li><strong>Profecía:</strong> Asignado con los impíos y enterrado con el rico (Is 53:9).<br>
+                <strong>Cumplimiento:</strong> Mateo 27:38, 57-60 (Crucificado entre ladrones, enterrado en la tumba de José de Arimatea).</li>
+            </ul>
+        `;
+    }
+
+    if (lowerPrompt.includes("cronología") || lowerPrompt.includes("tiempo") || lowerPrompt.includes("moisés")) {
+        return `
+            <p><strong>⏳ Línea de Tiempo: La vida de Moisés (120 años)</strong></p>
+            <p>La vida de Moisés se divide clásicamente en tres períodos de 40 años (Hechos 7):</p>
+            <ul>
+                <li><strong>Primeros 40 años (El Príncipe):</strong> Moisés nace, es salvado de las aguas y educado en toda la sabiduría de Egipto como hijo de la hija de Faraón (Hechos 7:22-23). Termina con su huida tras matar a un egipcio.</li>
+                <li><strong>Segundos 40 años (El Pastor):</strong> Moisés huye a Madián. Se casa con Séfora, tiene hijos y pastorea ovejas en el desierto. Dios está quebrando su orgullo egipcio. Termina con la aparición de la zarza ardiente en Horeb (Éxodo 3).</li>
+                <li><strong>Últimos 40 años (El Libertador):</strong> Moisés regresa a Egipto, enfrenta a Faraón (Las 10 plagas), lidera el Éxodo, recibe la Ley en el Sinaí y guía a Israel por el desierto. Muere a los 120 años en el Monte Nebo, con sus ojos nunca oscurecidos y su vigor intacto (Deuteronomio 34:7).</li>
+            </ul>
+        `;
+    }
+
+    if (lowerPrompt.includes("hola") || lowerPrompt.includes("saludo") || lowerPrompt.includes("shalom")) {
+        return `<p>¡Shalom! Bendiciones. ¿En qué tema bíblico, palabra original o estudio puedo asistirte el día de hoy?</p>`;
+    }
+
+    // Respuesta por defecto si no coincide ninguna regla
+    return `
+        <p>Esa es una excelente pregunta bíblica.</p>
+        <p>Como HASHEM AI se encuentra en su fase Beta dentro de esta demostración, mis respuestas están programadas para escenarios específicos como:</p>
+        <ul>
+            <li>Explicar palabras hebreas (ej: "Jessed").</li>
+            <li>Generar sermones (ej: "Sermón sobre la fe").</li>
+            <li>Relacionar profecías (ej: "Profecías de Isaías 53").</li>
+            <li>Mostrar líneas de tiempo (ej: "Cronología de Moisés").</li>
+        </ul>
+        <p>Por favor, intenta usar alguna de esas sugerencias, o haz clic en los botones del panel izquierdo.</p>
+    `;
+}
