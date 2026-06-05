@@ -5,7 +5,12 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "install:admin": "npm install --prefix admin/server && npm install --prefix admin/client",
+    "admin": "concurrently \"npm run dev --prefix admin/server\" \"npm run start --prefix admin/client\"",
+    "build": "vite build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +24,10 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.21.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "gh-pages": "^6.3.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ABYA7/Hashem.git"
@@ -27,5 +35,5 @@
   "bugs": {
     "url": "https://github.com/ABYA7/Hashem/issues"
   },
-  "homepage": "https://github.com/ABYA7/Hashem#readme"
+  "homepage": "https://ABYA7.github.io/Hashem"
 }

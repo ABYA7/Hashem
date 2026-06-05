@@ -1873,7 +1873,7 @@ window.renderMultimediaCategory = function(category, element) {
         
         if (category === 'imagenes' || category === 'ilustraciones') {
             card.innerHTML = `
-                <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.src='https://via.placeholder.com/800x600?text=Error+cargando+imagen'">
+                <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgODAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkVycm9yIGNhcmdhbmRvIGltYWdlbjwvdGV4dD48L3N2Zz4='">
                 <div class="media-info">
                     <div class="media-title">${item.title}</div>
                     <div class="media-desc">${item.desc}</div>
