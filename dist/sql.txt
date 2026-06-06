@@ -1,0 +1,41 @@
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100),
+    email VARCHAR(150),
+    password VARCHAR(255)
+);
+
+CREATE TABLE biblias (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100)
+);
+
+CREATE TABLE libros (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100)
+);
+
+CREATE TABLE capitulos (
+    id SERIAL PRIMARY KEY,
+    libro_id INTEGER
+);
+
+CREATE TABLE versiculos (
+    id SERIAL PRIMARY KEY,
+    capitulo_id INTEGER,
+    numero INTEGER,
+    texto TEXT
+);
+
+CREATE TABLE diccionario (
+    id SERIAL PRIMARY KEY,
+    termino VARCHAR(255),
+    descripcion TEXT
+);
+
+CREATE TABLE notas (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER,
+    titulo VARCHAR(255),
+    contenido TEXT
+);

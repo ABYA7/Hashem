@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="HASHEM PRO - Software Bíblico Profesional para el estudio profundo de las Escrituras.">
+    <title>HASHEM PRO - Software Teológico</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_search.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Leaflet JS y CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="data/mapsData.js"></script>
+    <script src="data/timelineData.js"></script>
+    <script src="data/multimediaData.js"></script>
+    <script src="app.js?v=2" defer></script>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Menú Lateral -->
+    <div class="sidebar">
+        <div class="logo">
+            <h1>HASHEM</h1>
+            <p>Software Bíblico Profesional</p>
+        </div>
+
+        <ul class="menu">
+            <li class="active-nav" onclick="showModule('dashboard', this)">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </li>
+            <li onclick="showModule('bible', this)">
+                <i class="fas fa-book-bible"></i>
+                Biblioteca Bíblica
+            </li>
+            <li onclick="showModule('dictionary', this)">
+                <i class="fas fa-scroll"></i>
+                Diccionario Rabí
+            </li>
+            <li onclick="showModule('editor', this)">
+                <i class="fas fa-pen"></i>
+                Estudios Bíblicos
+            </li>
+            <li onclick="showModule('maps', this)">
+                <i class="fas fa-map-location-dot"></i>
+                Mapas Interactivos
+            </li>
+            <li onclick="showModule('timeline', this)">
+                <i class="fas fa-clock"></i>
+                Cronología
+            </li>
+            <li onclick="showModule('ai', this)">
+                <i class="fas fa-robot"></i>
+                HASHEM AI
+            </li>
+            <li onclick="showModule('multimedia', this)">
+                <i class="fas fa-photo-video"></i>
+                Multimedia
+            </li>
+            <li onclick="showModule('about', this)">
+                <i class="fas fa-circle-info"></i>
+                Acerca de
+            </li>
+        </ul>
+    </div>
+
+    <!-- Área Principal -->
+    <div class="main">
+
+        <!-- Barra Superior -->
+        <div class="topbar">
+            <h2>HASHEM PRO</h2>
+            <div class="topbar-actions">
+                <input 
+                    type="text" 
+                    id="globalSearch"
+                    class="search" 
+                    placeholder="Buscar versículo, palabra o tema... (Presione Enter)">
+                <!-- Selector de 4 temas -->
+                <div class="theme-selector" title="Seleccionar tema">
+                    <span class="theme-dot active" data-theme="dark"  title="Oscuro (predeterminado)"></span>
+                    <span class="theme-dot"        data-theme="light" title="Claro"></span>
+                    <span class="theme-dot"        data-theme="gray"  title="Gris Profesional"></span>
+                    <span class="theme-dot"        data-theme="blue"  title="Azul Moderno"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay de Resultados de Búsqueda Global -->
+        <div id="searchResultsOverlay" class="search-overlay" style="display: none;">
+            <div class="search-header">
+                <h3>Resultados de Búsqueda</h3>
+                <button id="closeSearchBtn" class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="searchResultsContent" class="search-content">
+                <!-- Los resultados se insertarán aquí -->
+            </div>
+        </div>
+
+        <!-- Contenido Dinámico -->
+        <div class="content">
+
+            <!-- Módulo Dashboard -->
+            <section id="dashboard" class="module active">
+                <h2>Panel Principal</h2>
+                <div class="cards">
+                    <div class="card">
+                        <h3>Biblias</h3>
+                        <p>Múltiples versiones bíblicas.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Diccionario Rabí</h3>
+                        <p>Enciclopedia bíblica avanzada.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Estudios</h3>
+                        <p>Notas y comentarios.</p>
+                    </div>
+                    <div class="card">
+                        <h3>HASHEM AI</h3>
+                        <p>Asistente inteligente.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Módulo Biblia -->
+            <section id="bible" class="module">
+                <h2>Biblioteca Bíblica</h2>
+                
+                <div class="bible-controls" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <select id="bibleVersionSelect" style="flex: 1;">
+                        <option value="rv1909">Reina Valera 1909</option>
+                        <option value="rv1960">Reina Valera 1960</option>
+                    </select>
+                    <select id="bibleBookSelect" style="flex: 1;" disabled>
+                        <option value="">Cargando libros...</option>
+                    </select>
+                    <select id="bibleChapterSelect" style="flex: 1;" disabled>
+                        <option value="">Capítulo</option>
+                    </select>
+                </div>
+
+                <div class="bible-reader" id="bibleReaderArea" style="background: var(--reader-bg); color: var(--reader-text); padding: 30px; border-radius: 15px; min-height: 400px; font-size: 18px; line-height: 1.8; overflow-y: auto; max-height: 60vh; position: relative;">
+                    <div style="text-align: center; color: #666; margin-top: 50px;">
+                        <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
+                        <p>Seleccione un libro y capítulo para comenzar la lectura.</p>
+                    </div>
+                </div>
+                
+                <!-- Paleta de colores flotante para resaltado -->
+                <div id="colorPalette" class="color-palette">
+                    <button class="color-btn color-yellow" data-color="yellow" title="Amarillo"></button>
+                    <button class="color-btn color-green" data-color="green" title="Verde"></button>
+                    <button class="color-btn color-blue" data-color="blue" title="Azul"></button>
+                    <button class="color-btn color-pink" data-color="pink" title="Rosa"></button>
+                    <button class="color-btn color-clear" data-color="clear" title="Borrar resaltado"><i class="fas fa-times"></i></button>
+                </div>
+            </section>
+
+            <!-- Diccionario Rabí -->
+        <div id="dictionary" class="module">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="color: var(--accent); margin: 0;">Enciclopedia Rabí</h1>
+                
+                <!-- Botones Admin Ocultos -->
+                <div id="adminDictControls" style="display: none; gap: 10px;">
+                    <button onclick="openDictAdminModal()" style="background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-plus"></i> Nuevo Artículo</button>
+                    <button onclick="downloadDictJson()" style="background: #27ae60; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-download"></i> Descargar Base Datos</button>
+                    <button onclick="lockAdminMode()" style="background: #c0392b; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-lock"></i> Bloquear</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <input type="text" id="dictionarySearch" class="search" placeholder="Buscar término, personaje, lugar..." style="flex: 2;">
+                <select id="dictionaryCategory" class="search" style="flex: 1;">
+                    <option value="all">Todas las Categorías</option>
+                    <option value="Tanaj">Tanaj</option>
+                    <option value="Talmud y Mishná">Talmud y Mishná</option>
+                    <option value="Historia judía">Historia judía</option>
+                    <option value="Arqueología">Arqueología</option>
+                    <option value="Geografía bíblica">Geografía bíblica</option>
+                    <option value="Cultura hebrea">Cultura hebrea</option>
+                    <option value="Costumbres antiguas">Costumbres antiguas</option>
+                    <option value="Profecías">Profecías</option>
+                    <option value="Personajes bíblicos">Personajes bíblicos</option>
+                </select>
+            </div>
+
+
+            <!-- Alfabeto (A-Z) -->
+            <div id="dictionaryAlphabet" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; justify-content: center;">
+                <!-- Las letras se inyectarán desde JS -->
+            </div>
+
+            <!-- Layout de Doble Panel -->
+            <div style="display: flex; gap: 20px; height: calc(100vh - 250px);">
+                <!-- Panel Izquierdo: Lista de Términos -->
+                <div style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; overflow-y: auto; display: flex; flex-direction: column;">
+                    <div id="dictionaryTermsList" style="padding: 10px;">
+                        <!-- Los términos se inyectarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Artículo de la Enciclopedia -->
+                <div style="flex: 2; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; overflow-y: auto; padding: 30px; position: relative;" id="dictionaryArticle">
+                    <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
+                        <i class="fas fa-book-reader" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
+                        <p>Seleccione un término de la lista para leer el artículo enciclopédico.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Editor de Enciclopedia (Solo Admin) -->
+            <div id="dictAdminModal" class="search-overlay" style="display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.8);">
+                <div style="background: var(--bg-tertiary); padding: 30px; border-radius: 10px; width: 600px; max-width: 95%; max-height: 90vh; overflow-y: auto; position: relative;">
+                    <button onclick="document.getElementById('dictAdminModal').style.display='none'" class="close-btn" style="position: absolute; top: 10px; right: 15px;"><i class="fas fa-times"></i></button>
+                    <h3 style="color: var(--accent); margin-bottom: 20px;" id="dictAdminTitle">Editar Artículo</h3>
+                    
+                    <input type="hidden" id="dictAdminIndex">
+                    
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Término</label>
+                    <input type="text" id="dictAdminTermino" class="search" style="width: 100%; margin-bottom: 15px;">
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Categoría</label>
+                            <input type="text" id="dictAdminCategoria" class="search" style="width: 100%;" placeholder="Ej: Arqueología">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Fuente</label>
+                            <input type="text" id="dictAdminFuente" class="search" style="width: 100%;" placeholder="Ej: Tanaj / Historia">
+                        </div>
+                    </div>
+
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Definición / Artículo</label>
+                    <textarea id="dictAdminDefinicion" class="search" style="width: 100%; height: 150px; margin-bottom: 15px; resize: vertical;"></textarea>
+
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Referencias Bíblicas (Separadas por comas)</label>
+                    <input type="text" id="dictAdminReferencias" class="search" style="width: 100%; margin-bottom: 20px;" placeholder="Ej: Génesis 1:1, Juan 3:16">
+
+                    <!-- Nuevos campos del diccionario enciclopédico -->
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Nombre en hebreo</label>
+                    <input type="text" id="dictAdminNombreHebreo" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: מֹשֶׁה">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Pronunciación</label>
+                    <input type="text" id="dictAdminPronunciacion" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: moʊˈseɪs">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Significado</label>
+                    <input type="text" id="dictAdminSignificado" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Salvado del agua">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Etimología</label>
+                    <input type="text" id="dictAdminEtimologia" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Del hebreo 'Moshe' que significa...">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Primera aparición bíblica</label>
+                    <input type="text" id="dictAdminPrimeraAparicion" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Éxodo 2:10">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Historia completa</label>
+                    <textarea id="dictAdminHistoria" class="search" style="width: 100%; height: 120px; margin-bottom: 10px; resize: vertical;" placeholder="Detalle histórico"></textarea>
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Árbol genealógico</label>
+                    <input type="text" id="dictAdminArbolGenealogico" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: hijo de Amram">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Línea cronológica</label>
+                    <input type="text" id="dictAdminLineaCronologica" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: siglo XIII a.C.">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Comentarios rabínicos</label>
+                    <input type="text" id="dictAdminComentariosRabinicos" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Talmud Bava...">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Datos arqueológicos</label>
+                    <input type="text" id="dictAdminDatosArqueologicos" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Hallazgos en...">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Mapas relacionados</label>
+                    <input type="text" id="dictAdminMapas" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Mapa de ruta...">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Imágenes ilustrativas (URL separadas por comas)</label>
+                    <input type="text" id="dictAdminImagenes" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: https://...jpg, https://...png">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Curiosidades</label>
+                    <input type="text" id="dictAdminCuriosidades" class="search" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: Relación con...">
+                    <label style="color: var(--text-secondary); display: block; margin-bottom: 5px;">Aplicación espiritual</label>
+                    <input type="text" id="dictAdminAplicacionEspiritual" class="search" style="width: 100%; margin-bottom: 20px;" placeholder="Ej: Meditación, enseñanza...">
+                    
+                    <button onclick="saveDictArticle()" style="width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                        Guardar Artículo
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Módulo Editor -->
+        <section id="editor" class="module">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--accent);">Editor de Estudios Bíblicos</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportStudies()" class="chapter-btn"><i class="fas fa-file-export"></i> Exportar</button>
+                    <input type="file" id="importStudiesFile" accept=".json" style="display: none;" onchange="importStudies(event)">
+                    <button onclick="document.getElementById('importStudiesFile').click()" class="chapter-btn"><i class="fas fa-file-import"></i> Importar</button>
+                    <button onclick="window.print()" class="chapter-btn"><i class="fas fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 20px; height: calc(100vh - 200px); position: relative;">
+                <!-- Panel Izquierdo: Lista de Estudios -->
+                <div style="flex: 1; min-width: 250px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column;">
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px;">
+                        <button onclick="openNewDocumentModal()" style="flex: 1; background: #27ae60; color: #fff; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-plus"></i> Nuevo</button>
+                    </div>
+                    <div style="padding: 10px;">
+                        <input type="text" id="documentSearch" class="search" style="width: 100%; padding: 8px; border-radius: 5px; font-size: 14px;" placeholder="Buscar documento..." onkeyup="filterDocuments()">
+                    </div>
+                    <div id="studiesList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                        <!-- Los estudios se inyectarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Modal Nuevo Documento -->
+                <div id="newDocumentModal" class="modal">
+                    <div class="modal-content">
+                        <button onclick="closeNewDocumentModal()" class="close-modal"><i class="fas fa-times"></i></button>
+                        <h3>Nuevo Documento</h3>
+                        <label>Tipo de documento:</label>
+                        <select id="newDocType" style="margin-bottom: 15px;">
+                            <option value="nota">📝 Nota</option>
+                            <option value="sermon">✝️ Sermón</option>
+                            <option value="bosquejo">📋 Bosquejo</option>
+                            <option value="comentario">💬 Comentario</option>
+                            <option value="cuaderno">📚 Cuaderno Temático</option>
+                        </select>
+                        <label>Título:</label>
+                        <input type="text" id="newDocTitle" placeholder="Mi nuevo estudio...">
+                        <button onclick="createNewStudy()" style="width: 100%; background: var(--accent); color: #000; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px;">Crear Documento</button>
+                    </div>
+                </div>
+
+                <!-- Panel Central: Editor Rich Text -->
+                <div style="flex: 3; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+                    
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; flex: 1; gap: 10px;">
+                            <span id="currentDocTypeIcon" style="font-size: 1.5em;" title="Tipo de documento">📝</span>
+                            <input type="text" id="studyTitle" placeholder="Título del Estudio..." class="search" style="margin: 0; flex: 1; font-size: 1.2em; font-weight: bold; border: none; background: transparent; padding: 5px;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-left: 15px; align-items: center;">
+                            <span id="saveStatus" style="color: var(--text-secondary); font-size: 12px; margin-right: 10px;"><i class="fas fa-cloud-check"></i> Guardado</span>
+                            <select id="versionSelect" style="padding: 5px; border-radius: 5px; max-width: 100px; display: none;" onchange="restoreVersion(this.value)">
+                                <option value="">Versiones</option>
+                            </select>
+                            <button onclick="saveCurrentStudy(true)" style="background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-save"></i> Guardar</button>
+                            <button onclick="deleteCurrentStudy()" style="background: #c0392b; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar Avanzada -->
+                    <div class="rich-toolbar" style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 10px; background: var(--bg-secondary);">
+                        <div class="toolbar-group">
+                            <select onchange="formatText('fontName', this.value)" class="toolbar-select">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New</option>
+                                <option value="Courier New">Courier</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="'Playfair Display', serif">Playfair Display</option>
+                            </select>
+                            <select onchange="formatText('formatBlock', this.value)" class="toolbar-select">
+                                <option value="P">Párrafo</option>
+                                <option value="H1">Título 1</option>
+                                <option value="H2">Título 2</option>
+                                <option value="H3">Título 3</option>
+                            </select>
+                            <select onchange="formatText('fontSize', this.value)" class="toolbar-select">
+                                <option value="1">Pequeño</option>
+                                <option value="3" selected>Normal</option>
+                                <option value="5">Grande</option>
+                                <option value="7">Enorme</option>
+                            </select>
+                        </div>
+                        
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('bold')" title="Negrita"><i class="fas fa-bold"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('italic')" title="Cursiva"><i class="fas fa-italic"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('underline')" title="Subrayado"><i class="fas fa-underline"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('strikeThrough')" title="Tachado"><i class="fas fa-strikethrough"></i></button>
+                        </div>
+
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="Alinear Izquierda"><i class="fas fa-align-left"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="Centrar"><i class="fas fa-align-center"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('justifyRight')" title="Alinear Derecha"><i class="fas fa-align-right"></i></button>
+                        </div>
+
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Lista Viñetas"><i class="fas fa-list-ul"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="Lista Numerada"><i class="fas fa-list-ol"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('indent')" title="Aumentar Sangría"><i class="fas fa-indent"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('outdent')" title="Reducir Sangría"><i class="fas fa-outdent"></i></button>
+                        </div>
+
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="insertLink()" title="Insertar Enlace"><i class="fas fa-link"></i></button>
+                            <button class="toolbar-btn" onclick="insertImagePrompt()" title="Insertar Imagen"><i class="fas fa-image"></i></button>
+                            <button class="toolbar-btn" onclick="insertTablePrompt()" title="Insertar Tabla"><i class="fas fa-table"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('insertHorizontalRule')" title="Línea Horizontal"><i class="fas fa-minus"></i></button>
+                        </div>
+
+                        <div class="toolbar-group">
+                            <input type="color" onchange="formatText('foreColor', this.value)" title="Color de Texto" style="height: 30px; width: 30px; border: none; cursor: pointer; padding: 0; border-radius: 5px;">
+                            <input type="color" value="#ffff00" onchange="formatText('hiliteColor', this.value)" title="Color de Resaltado" style="height: 30px; width: 30px; border: none; cursor: pointer; padding: 0; border-radius: 5px;">
+                            <button class="toolbar-btn" onclick="formatText('removeFormat')" title="Limpiar Formato"><i class="fas fa-eraser"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Área de edición -->
+                    <div id="studyEditor" class="editor-area" contenteditable="true" style="flex: 1; padding: 30px 40px; overflow-y: auto; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-serif); font-size: 18px; outline: none; line-height: 1.8;">
+                        <p><br></p>
+                    </div>
+
+                    <!-- Footer del Editor (Estadísticas) -->
+                    <div style="padding: 10px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); background: var(--bg-secondary);">
+                        <span id="wordCount">0 palabras</span>
+                        <span id="charCount">0 caracteres</span>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Integración Inteligente -->
+                <div id="smartPanel" style="flex: 1; min-width: 280px; max-width: 350px; background: var(--bg-tertiary); border: 1px solid var(--accent); border-radius: 10px; display: none; flex-direction: column; overflow: hidden; box-shadow: -5px 0 15px rgba(0,0,0,0.2); transition: all 0.3s;">
+                    <div style="padding: 15px; background: var(--accent); color: #000; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+                        <span><i class="fas fa-lightbulb"></i> Diccionario Rabí</span>
+                        <button onclick="closeSmartPanel()" style="background: transparent; border: none; cursor: pointer; font-size: 1.2em; color: #000;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="smartPanelContent" style="padding: 15px; overflow-y: auto; flex: 1;">
+                        <!-- El contenido sugerido aparecerá aquí -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Módulo Mapas -->
+        <section id="maps" class="module">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--accent);">Mapas Bíblicos Interactivos</h2>
+            </div>
+            
+            <div style="display: flex; gap: 20px; height: calc(100vh - 180px);">
+                <!-- Lista de Mapas -->
+                <div style="flex: 1; min-width: 250px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column;">
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 10px 10px 0 0;">
+                        <h3 style="margin: 0; font-size: 1.1em;">Rutas y Territorios</h3>
+                    </div>
+                    <div id="mapsList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                        <!-- Mapas inyectados aquí -->
+                    </div>
+                </div>
+
+                <!-- Visor del Mapa -->
+                <div style="flex: 3; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+                    <!-- Título del mapa cargado -->
+                    <div id="currentMapTitle" style="position: absolute; top: 10px; left: 50px; z-index: 1000; background: rgba(0,0,0,0.7); color: #fff; padding: 5px 15px; border-radius: 5px; font-weight: bold; border: 1px solid var(--accent);">
+                        Seleccione un mapa
+                    </div>
+                    
+                    <!-- Contenedor Leaflet -->
+                    <div id="leafletMap" style="flex: 1; width: 100%; background: #e5e5e5;"></div>
+
+                    <!-- Línea de Tiempo / Slider -->
+                    <div style="height: 80px; background: var(--bg-tertiary); border-top: 1px solid var(--border-color); padding: 15px 20px; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; color: var(--accent); font-weight: bold;">
+                            <span id="timelineStart">Inicio</span>
+                            <span id="timelineCurrent">Año</span>
+                            <span id="timelineEnd">Fin</span>
+                        </div>
+                        <input type="range" id="timelineSlider" min="0" max="100" value="100" style="width: 100%;" oninput="filterMapMarkers(this.value)">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Módulo Cronología -->
+        <section id="timeline" class="module">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--accent);">Cronología Bíblica</h2>
+                <!-- Filtros -->
+                <div class="timeline-filters">
+                    <button class="filter-btn active" data-category="all" onclick="filterTimeline('all')">Todos</button>
+                    <button class="filter-btn" data-category="evento" onclick="filterTimeline('evento')">Eventos</button>
+                    <button class="filter-btn" data-category="rey" onclick="filterTimeline('rey')">Reyes</button>
+                    <button class="filter-btn" data-category="profeta" onclick="filterTimeline('profeta')">Profetas</button>
+                    <button class="filter-btn" data-category="imperio" onclick="filterTimeline('imperio')">Imperios</button>
+                </div>
+            </div>
+            
+            <div id="timelineContainer" class="vertical-timeline">
+                <!-- Tarjetas inyectadas vía app.js -->
+            </div>
+        </section>
+
+        <!-- MÓDULO 6: HASHEM AI -->
+        <section id="ai" class="module" style="height: 100%; display: none; flex-direction: row; gap: 20px;">
+            <!-- Sidebar de HASHEM AI -->
+            <div class="sidebar" style="width: 250px; flex-shrink: 0; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column;">
+                <div class="sidebar-header" style="padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 10px 10px 0 0;">
+                    <h3 style="margin: 0; font-size: 1.1em; color: var(--accent);"><i class="fas fa-lightbulb"></i> Sugerencias</h3>
+                </div>
+                <div class="list-container" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <div class="study-item" onclick="insertAiPrompt('Sermón sobre la fe en Hebreos 11')">
+                        <div class="study-item-title"><i class="fas fa-comment-dots"></i> Sermón sobre la fe</div>
+                    </div>
+                    <div class="study-item" onclick="insertAiPrompt('Explica la palabra hebrea Jessed')">
+                        <div class="study-item-title"><i class="fas fa-language"></i> Palabra Hebrea</div>
+                    </div>
+                    <div class="study-item" onclick="insertAiPrompt('Relaciona las profecías del Mesías en Isaías 53')">
+                        <div class="study-item-title"><i class="fas fa-scroll"></i> Profecías del Mesías</div>
+                    </div>
+                    <div class="study-item" onclick="insertAiPrompt('Línea de tiempo de la vida de Moisés')">
+                        <div class="study-item-title"><i class="fas fa-clock"></i> Vida de Moisés</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Principal -->
+            <div class="content-area" style="flex: 1; display: flex; flex-direction: column; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
+                <div class="topbar" style="border-bottom: 1px solid var(--border-color); padding: 15px; background: var(--bg-tertiary);">
+                    <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-robot" style="color: var(--accent);"></i> HASHEM AI 
+                        <span style="font-size: 12px; background: var(--bg-hover); padding: 3px 8px; border-radius: 10px; font-weight: normal; border: 1px solid var(--border-color);">BETA</span>
+                    </h2>
+                </div>
+                
+                <!-- Historial de Chat -->
+                <div id="aiChatHistory" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+                    <div class="ai-message ai-system">
+                        <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="ai-bubble">
+                            <p><strong>¡Shalom!</strong> Soy HASHEM AI, tu asistente bíblico integrado.</p>
+                            <p>Puedo ayudarte a preparar sermones, explicar palabras en hebreo/griego, buscar referencias cruzadas, o crear estudios detallados.</p>
+                            <p><em>¿En qué puedo ayudarte hoy?</em></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <div style="padding: 15px 20px; border-top: 1px solid var(--border-color); background: var(--bg-tertiary);">
+                    <div class="ai-input-wrapper" style="display: flex; gap: 10px; align-items: flex-end;">
+                        <textarea id="aiInput" placeholder="Escribe tu pregunta bíblica aquí... (Ej: Dame un sermón sobre la fe)" rows="1" onkeypress="handleAiKeyPress(event)" style="flex: 1; resize: none; padding: 12px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-family: inherit; font-size: 15px; outline: none;"></textarea>
+                        <button id="aiSendBtn" onclick="sendAiMessage()" style="background: var(--accent); color: #000; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2em; transition: 0.2s;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div style="text-align: center; font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
+                        HASHEM AI procesa datos localmente. Siempre verifica la información teológica con las Escrituras.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MÓDULO 7: SISTEMA MULTIMEDIA -->
+        <section id="multimedia" class="module" style="height: 100%; display: none; flex-direction: row; gap: 20px;">
+            <!-- Menú Multimedia -->
+            <div class="sidebar" style="width: 250px; flex-shrink: 0; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column;">
+                <div class="sidebar-header" style="padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 1.1em; color: var(--accent);"><i class="fas fa-photo-video"></i> Categorías</h3>
+                    <button onclick="abrirModalMultimedia()" style="background: var(--accent); color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.9em;"><i class="fas fa-plus"></i> Añadir</button>
+                </div>
+                <div class="list-container" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <div class="study-item active-media-cat" onclick="renderMultimediaCategory('imagenes', this)">
+                        <div class="study-item-title"><i class="fas fa-image"></i> Imágenes Bíblicas</div>
+                    </div>
+                    <div class="study-item" onclick="renderMultimediaCategory('ilustraciones', this)">
+                        <div class="study-item-title"><i class="fas fa-paint-brush"></i> Ilustraciones</div>
+                    </div>
+                    <div class="study-item" onclick="renderMultimediaCategory('videos', this)">
+                        <div class="study-item-title"><i class="fas fa-video"></i> Videos</div>
+                    </div>
+                    <div class="study-item" onclick="renderMultimediaCategory('audio_biblias', this)">
+                        <div class="study-item-title"><i class="fas fa-headphones"></i> Audio Biblias</div>
+                    </div>
+                    <div class="study-item" onclick="renderMultimediaCategory('pronunciacion_hebrea', this)">
+                        <div class="study-item-title"><i class="fas fa-volume-up"></i> Hebreo</div>
+                    </div>
+                    <div class="study-item" onclick="renderMultimediaCategory('pronunciacion_griega', this)">
+                        <div class="study-item-title"><i class="fas fa-volume-up"></i> Griego</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido Multimedia -->
+            <div class="content-area" style="flex: 1; display: flex; flex-direction: column; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; padding: 20px; overflow-y: auto;">
+                <h2 id="mediaTitle" style="color: var(--accent); margin-top: 0; margin-bottom: 20px;">Imágenes Bíblicas</h2>
+                <div id="mediaGrid" class="media-grid">
+                    <!-- Media Items injected here -->
+                </div>
+            </div>
+        </section>
+
+            <!-- Módulo Acerca De -->
+            <section id="about" class="module">
+                <h2>Acerca de HASHEM</h2>
+                <p style="line-height: 1.6;">
+                    HASHEM es una plataforma bíblica integral diseñada para el estudio profundo de las Escrituras, incorporando múltiples versiones bíblicas, diccionario enciclopédico rabí, herramientas de estudio e inteligencia artificial.
+                </p>
+            </section>
+
+        </div> <!-- Fin Content -->
+
+    <!-- Modal Añadir Multimedia -->
+    <div id="modalMultimedia" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-secondary); border: 1px solid var(--accent); border-radius: 10px; padding: 20px; width: 400px; max-width: 90%;">
+            <h3 style="margin-top: 0; color: var(--accent); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Añadir Contenido</h3>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+                <input type="text" id="addMediaTitle" placeholder="Título (Ej. Alabanza 1)" class="search" style="width: 100%; box-sizing: border-box;">
+                <input type="text" id="addMediaDesc" placeholder="Breve descripción" class="search" style="width: 100%; box-sizing: border-box;">
+                <input type="file" id="addMediaFile" accept="audio/*,image/*,video/*" class="search" style="width: 100%; box-sizing: border-box;">
+                <input type="text" id="addMediaUrl" placeholder="Ruta local o URL (Opcional, Ej. https://example.com/audio.mp3)" class="search" style="width: 100%; box-sizing: border-box;">
+                <p style="font-size:0.85em; color:var(--text-secondary); margin-top:4px;">* Si seleccionas un archivo, se usará en lugar de la URL. El archivo no puede superar los 5 MB.</p>
+                <select id="addMediaCat" class="search" style="width: 100%; box-sizing: border-box;">
+                    <option value="imagenes">Imágenes</option>
+                    <option value="ilustraciones">Ilustraciones</option>
+                    <option value="videos">Videos</option>
+                    <option value="audio_biblias">Audio Biblias</option>
+                    <option value="pronunciacion_hebrea">Pronunciación Hebrea</option>
+                    <option value="pronunciacion_griega">Pronunciación Griega</option>
+                </select>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                    <button onclick="cerrarModalMultimedia()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Cancelar</button>
+                    <button onclick="guardarMultimedia()" style="background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <footer>
+            HASHEM PRO © 2026
+        </footer>
+
+    </div> <!-- Fin Main -->
+</div> <!-- Fin Container -->
+
+<!-- Lógica JavaScript -->
+
+</body>
+</html>
