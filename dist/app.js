@@ -219,7 +219,7 @@ function renderChapter(bookName, chapterNum, verses, bookAbbrev) {
         const verseId = `${currentVersion}-${bookAbbrev}-${chapterNum}-${verseNum}`;
         const highlightColor = highlights[verseId] ? `highlight-${highlights[verseId]}` : '';
 
-        html += `<p style="margin-bottom: 10px;">
+        html += `<p style="margin-bottom: 4px;">
                     <sup style="color: var(--accent); font-weight: bold; margin-right: 5px;">${verseNum}</sup>
                     <span class="verse-span ${highlightColor}" data-verse-id="${verseId}">${verseText}</span>
                  </p>`;
