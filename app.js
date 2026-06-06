@@ -419,6 +419,19 @@ function showModule(id, element) {
     if (element) {
         element.classList.add('active-nav');
     }
+
+    if (id === 'bible') {
+        const bookSelect = document.getElementById('bibleBookSelect');
+        const chapterSelect = document.getElementById('bibleChapterSelect');
+        if (bookSelect && chapterSelect && currentBibleData && currentBibleData.length > 0) {
+            bookSelect.value = "0";
+            bookSelect.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                chapterSelect.value = "0";
+                chapterSelect.dispatchEvent(new Event('change'));
+            }, 50); // slight delay to ensure book renders chapters
+        }
+    }
 }
 
 // ====== DICCIONARIO ENCICLOPÉDICO ======
