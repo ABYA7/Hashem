@@ -5,6 +5,7 @@ const timelineDB = [
         title: "Creación y Caída",
         category: "evento",
         desc: "Dios crea los cielos, la tierra y a la humanidad. Caída de Adán y Eva en el Edén.",
+        ref: "Génesis 1-3",
         sync: "Inicio de la historia bíblica (fecha estimada tradicional)."
     },
     {
@@ -13,6 +14,7 @@ const timelineDB = [
         title: "El Diluvio Universal",
         category: "evento",
         desc: "Dios envía un diluvio global. Noé y su familia sobreviven en el arca.",
+        ref: "Génesis 6-9",
         sync: "Posibles paralelismos con relatos mesopotámicos antiguos (Ej: Epopeya de Gilgamesh)."
     },
     {
@@ -21,6 +23,7 @@ const timelineDB = [
         title: "Llamamiento de Abraham",
         category: "evento",
         desc: "Abram es llamado de Ur de los Caldeos hacia Canaán. Dios hace pacto con él.",
+        ref: "Génesis 12-25",
         sync: "Cultura Sumeria tardía y Dinastía III de Ur."
     },
     {
@@ -29,6 +32,7 @@ const timelineDB = [
         title: "José vendido a Egipto",
         category: "evento",
         desc: "José es vendido por sus hermanos, llevado a Egipto, y posteriormente elevado a gobernador.",
+        ref: "Génesis 37-50",
         sync: "Posible coincidencia con el Reino Medio de Egipto."
     },
     {
@@ -37,6 +41,7 @@ const timelineDB = [
         title: "El Éxodo",
         category: "evento",
         desc: "Moisés lidera la salida de Israel de la esclavitud en Egipto tras las 10 plagas.",
+        ref: "Éxodo 1-14",
         sync: "Imperio Nuevo en Egipto. Reinado debatido (posiblemente Amenhotep II o Tutmosis III)."
     },
     {
@@ -45,6 +50,7 @@ const timelineDB = [
         title: "Saúl, primer rey de Israel",
         category: "rey",
         desc: "Israel pide un rey y Samuel unge a Saúl, marcando el fin de la era de los Jueces.",
+        ref: "1 Samuel 9-31",
         sync: "Transición del final de la Edad del Bronce al comienzo de la Edad del Hierro."
     },
     {
@@ -53,6 +59,7 @@ const timelineDB = [
         title: "Reinado de David",
         category: "rey",
         desc: "David unifica las tribus, conquista Jerusalén y establece el reino firme de Israel.",
+        ref: "2 Samuel 5; 1 Reyes 2",
         sync: "Expansión del Reino Unido de Israel."
     },
     {
@@ -61,6 +68,7 @@ const timelineDB = [
         title: "Reinado de Salomón",
         category: "rey",
         desc: "Era de paz y prosperidad. Construcción del Primer Templo en Jerusalén.",
+        ref: "1 Reyes 5-8",
         sync: "Relaciones comerciales con Fenicia (Hiram de Tiro) y Egipto."
     },
     {
@@ -69,6 +77,7 @@ const timelineDB = [
         title: "División del Reino",
         category: "evento",
         desc: "Tras la muerte de Salomón, el reino se divide en Israel (Norte) y Judá (Sur).",
+        ref: "1 Reyes 12",
         sync: "Debilitamiento geopolítico en la región del Levante."
     },
     {
@@ -77,6 +86,7 @@ const timelineDB = [
         title: "Profeta Elías",
         category: "profeta",
         desc: "Elías confronta la idolatría de Acab y Jezabel. Desafío en el Monte Carmelo.",
+        ref: "1 Reyes 17-19",
         sync: "Reino de Israel (Norte) bajo el dominio de la dinastía de Omri."
     },
     {
@@ -85,6 +95,7 @@ const timelineDB = [
         title: "Caída del Reino del Norte",
         category: "imperio",
         desc: "El Imperio Asirio conquista Samaria y deporta a las 10 tribus de Israel.",
+        ref: "2 Reyes 17",
         sync: "Ascenso del Imperio Neo-Asirio (Tiglat-Pileser III, Salmanasar V, Sargón II)."
     },
     {
@@ -93,6 +104,7 @@ const timelineDB = [
         title: "Profeta Isaías",
         category: "profeta",
         desc: "Ministerio de Isaías en Judá. Profecías mesiánicas mayores.",
+        ref: "Isaías 1-66",
         sync: "Senaquerib asedia Jerusalén, fracasando frente a Ezequías."
     },
     {
@@ -101,6 +113,7 @@ const timelineDB = [
         title: "Caída de Jerusalén",
         category: "imperio",
         desc: "Nabucodonosor destruye Jerusalén y el Templo. Inicio del exilio en Babilonia.",
+        ref: "2 Reyes 25; Jeremías 52",
         sync: "Hegemonía del Imperio Neo-Babilónico."
     },
     {
@@ -109,6 +122,7 @@ const timelineDB = [
         title: "Ciro el Grande y Retorno",
         category: "imperio",
         desc: "El Imperio Medo-Persa conquista Babilonia. Ciro permite el regreso judío a Judá.",
+        ref: "Esdras 1; Isaías 45:1-6",
         sync: "Inicio del Imperio Aqueménida."
     },
     {
@@ -117,6 +131,7 @@ const timelineDB = [
         title: "Construcción del Segundo Templo",
         category: "evento",
         desc: "Finaliza la reconstrucción del Templo bajo Zorobabel tras exhortaciones de Hageo y Zacarías.",
+        ref: "Esdras 3-6",
         sync: "Reinado de Darío I de Persia."
     },
     {
@@ -125,6 +140,7 @@ const timelineDB = [
         title: "Alejandro Magno conquista Judea",
         category: "imperio",
         desc: "Grecia toma control de la región sin destruir Jerusalén. Inicia el período helenístico.",
+        ref: "",
         sync: "Imperio Griego Macedónico."
     },
     {
@@ -133,6 +149,7 @@ const timelineDB = [
         title: "Rebelión Macabea",
         category: "evento",
         desc: "Los judíos liderados por los Macabeos se rebelan contra Antíoco IV Epífanes.",
+        ref: "1 Macabeos 1-4",
         sync: "Conflicto con el Imperio Seléucida."
     },
     {
@@ -141,6 +158,7 @@ const timelineDB = [
         title: "Roma toma Jerusalén",
         category: "imperio",
         desc: "El general romano Pompeyo entra en Jerusalén. Judea se convierte en provincia romana.",
+        ref: "",
         sync: "Ascenso de la República/Imperio Romano."
     },
     {
@@ -149,6 +167,7 @@ const timelineDB = [
         title: "Nacimiento de Jesús",
         category: "evento",
         desc: "Jesucristo nace en Belén de Judea durante el reinado de Herodes el Grande.",
+        ref: "Mateo 1:18-25; Lucas 2:1-7",
         sync: "Reinado del emperador romano Augusto César."
     },
     {
@@ -157,6 +176,7 @@ const timelineDB = [
         title: "Crucifixión y Resurrección",
         category: "evento",
         desc: "Ministerio, muerte expiatoria y resurrección de Jesucristo.",
+        ref: "Mateo 27-28; Marcos 15-16; Lucas 23-24; Juan 19-20",
         sync: "Poncio Pilato, prefecto de Judea bajo el emperador Tiberio."
     },
     {
@@ -165,6 +185,7 @@ const timelineDB = [
         title: "Pentecostés y la Iglesia",
         category: "evento",
         desc: "Derramamiento del Espíritu Santo e inicio de la Iglesia primitiva en Jerusalén.",
+        ref: "Hechos 2",
         sync: "Crecimiento rápido del cristianismo temprano en el mundo romano."
     },
     {
@@ -173,6 +194,7 @@ const timelineDB = [
         title: "Destrucción del Templo",
         category: "imperio",
         desc: "Las legiones romanas bajo Tito destruyen Jerusalén y el Segundo Templo.",
+        ref: "Jeremías 52:12-14; Mateo 24:1-2",
         sync: "Dinastía Flavia en Roma."
     },
     {
@@ -181,6 +203,7 @@ const timelineDB = [
         title: "Apocalipsis y fin del Nuevo Testamento",
         category: "profeta",
         desc: "El apóstol Juan escribe el libro de Apocalipsis en la isla de Patmos.",
+        ref: "Apocalipsis 1",
         sync: "Persecuciones bajo el emperador Domiciano."
     }
 ];
