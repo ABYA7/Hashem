@@ -141,20 +141,11 @@ async function loadBible(version) {
         
         bookSelect.disabled = false;
 
-        const lastRead = JSON.parse(localStorage.getItem('hashemLastRead') || 'null');
-        if (lastRead && lastRead.version === version) {
-            bookSelect.value = lastRead.bookIndex;
-            bookSelect.dispatchEvent(new Event('change'));
-            chapterSelect.value = lastRead.chapterIndex;
-            chapterSelect.dispatchEvent(new Event('change'));
-        } else {
-            document.getElementById('bibleReaderArea').innerHTML = `
-                <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
-                    <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
-                    <p>Libros cargados. Seleccione un libro y capítulo para comenzar la lectura.</p>
-                </div>
-            `;
-        }
+        // Always open in Genesis chapter 1 when loading the bible
+        bookSelect.value = "0"; // Genesis
+        bookSelect.dispatchEvent(new Event('change'));
+        chapterSelect.value = "0"; // Chapter 1
+        chapterSelect.dispatchEvent(new Event('change'));
         
     } catch (error) {
         console.error("Error cargando la Biblia:", error);

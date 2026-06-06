@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     /* Luxury Dark Mode */
     --bg-primary: #0B0C10;
     --bg-secondary: #1F2833;
@@ -22,7 +22,7 @@
     --body-gradient: radial-gradient(circle at top center, #1F2833 0%, #0B0C10 80%);
 }
 
-/* ── TEMA: Claro (Blanco) ────────────────────────────── */
+/* â”€â”€ TEMA: Claro (Blanco) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 body.light-mode {
     --bg-primary: #F8FAFC;
     --bg-secondary: #FFFFFF;
@@ -44,7 +44,7 @@ body.light-mode {
     --body-gradient: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
 }
 
-/* ── TEMA: Gris Claro Profesional ───────────────────── */
+/* â”€â”€ TEMA: Gris Claro Profesional â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 body.gray-mode {
     --bg-primary: #ECEFF4;
     --bg-secondary: #FFFFFF;
@@ -66,7 +66,7 @@ body.gray-mode {
     --body-gradient: linear-gradient(135deg, #ECEFF4 0%, #DDE3EE 100%);
 }
 
-/* ── TEMA: Azul Moderno Profesional ─────────────────── */
+/* â”€â”€ TEMA: Azul Moderno Profesional â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 body.blue-mode {
     --bg-primary: #0A1628;
     --bg-secondary: #0F2040;
@@ -143,7 +143,7 @@ body {
 .topbar h2 { color: var(--text-primary); }
 .topbar-actions { display: flex; align-items: center; gap: 15px; }
 
-/* ── Selector de temas (4 puntos) ── */
+/* â”€â”€ Selector de temas (4 puntos) â”€â”€ */
 .theme-selector {
     display: flex; align-items: center; gap: 7px;
     background: var(--input-bg);
@@ -197,7 +197,7 @@ body {
     border: 1px solid var(--border-color); border-radius: 12px;
     backdrop-filter: blur(10px); font-family: var(--font-serif); padding: 25px;
 }
-.verse-span { padding: 4px 6px; border-radius: 6px; cursor: pointer; transition: all 0.2s; line-height: 1.8; font-size: 1.2em; color: var(--reader-text); }
+.verse-span { padding: 4px 6px; border-radius: 6px; cursor: pointer; transition: all 0.2s; line-height: 1.8; font-size: 1.05em; color: var(--reader-text); }
 .verse-span:hover { background: var(--bg-hover); color: var(--accent); }
 .verse-number { color: var(--accent); font-size: 0.8em; font-weight: bold; margin-right: 5px; font-family: var(--font-ui); }
 
@@ -290,7 +290,7 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
 
 
 /* ==========================================
-   CRONOLOG�A (M�DULO 5)
+   CRONOLOGÍA (MÓDULO 5)
 ========================================== */
 .timeline-filters {
     display: flex;
@@ -347,7 +347,7 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
     left: 50%;
 }
 
-/* El c�rculo en la l�nea central */
+/* El círculo en la línea central */
 .timeline-card-container::after {
     content: '';
     position: absolute;
@@ -373,7 +373,7 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* Colores por Categor�a */
+/* Colores por Categoría */
 .cat-evento::after { background-color: var(--accent) !important; }
 .cat-rey::after { background-color: #9b59b6 !important; }
 .cat-profeta::after { background-color: #2ecc71 !important; }
@@ -410,7 +410,7 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
 
 
 /* ==========================================
-   HASHEM AI (M�DULO 6)
+   HASHEM AI (MÓDULO 6)
 ========================================== */
 .ai-message {
     display: flex;
@@ -545,4 +545,12 @@ footer { text-align: center; padding: 15px; background: var(--footer-bg); font-s
 
 
 #multimedia.module.active { display: flex !important; flex-direction: row; gap: 20px; height: calc(100vh - 140px); }
+
+
+
+/* Text Highlighters */
+.highlight-yellow { background-color: rgba(255, 235, 59, 0.4) !important; color: inherit; }
+.highlight-green { background-color: rgba(76, 175, 80, 0.4) !important; color: inherit; }
+.highlight-blue { background-color: rgba(33, 150, 243, 0.4) !important; color: inherit; }
+.highlight-pink { background-color: rgba(233, 30, 99, 0.4) !important; color: inherit; }
 
