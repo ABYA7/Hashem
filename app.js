@@ -1375,6 +1375,7 @@ function drawMapMarkers(sliderPercentage) {
             <div style="font-family: var(--font-sans); color: #333;">
                 <h3 style="margin: 0 0 5px 0; color: #2c3e50;">${markerData.title}</h3>
                 <span style="font-size: 11px; background: #eee; padding: 2px 5px; border-radius: 3px;">${formatYear(markerData.year)}</span>
+                ${markerData.ref ? `<div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-top: 5px;"><i class="fas fa-bible"></i> ${markerData.ref}</div>` : ''}
                 <p style="font-size: 13px; line-height: 1.4; margin: 10px 0;">${markerData.desc}</p>
         `;
         if (markerData.image) {
