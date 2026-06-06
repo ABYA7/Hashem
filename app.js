@@ -1437,6 +1437,7 @@ window.renderTimeline = function(filterCategory) {
                     <span class="timeline-year">${event.yearLabel}</span>
                 </h3>
                 <p class="timeline-desc">${event.desc}</p>
+                ${event.ref ? `<div class="timeline-ref"><i class="fas fa-book"></i> ${event.ref}</div>` : ''}
                 ${event.sync ? `<div class="timeline-sync"><i class="fas fa-globe"></i> ${event.sync}</div>` : ''}
             </div>
         `;
