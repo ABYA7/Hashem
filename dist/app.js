@@ -659,6 +659,12 @@ window.showDictionaryArticle = function(index, clickedItem) {
         `;
     }
 
+    // Formatear la definición reduciendo saltos excesivos y usando párrafos compactos
+    const defHtml = item.definicion ? item.definicion
+        .split(/\n{2,}/) // separar por doble salto en párrafos
+        .map(p => `<p style="margin:0 0 8px; line-height:1.45;">${p.trim().replace(/\n/g, '<br>')}</p>`)
+        .join('') : '';
+
     const html = `
         ${adminButtons}
         <h1 style="color: var(--accent); margin-bottom: 5px; font-size: 32px;">${item.termino}</h1>
@@ -666,9 +672,9 @@ window.showDictionaryArticle = function(index, clickedItem) {
             <span style="font-size: 13px; color: #000; background: var(--accent); padding: 4px 10px; border-radius: 15px; font-weight: bold;"><i class="fas fa-folder"></i> ${item.categoria}</span>
             ${item.fuente ? `<span style="font-size: 13px; color: #fff; background: #555; padding: 4px 10px; border-radius: 15px;"><i class="fas fa-scroll"></i> ${item.fuente}</span>` : ''}
         </div>
-        
-        <div style="line-height: 1.8; font-size: 16px; color: var(--text-primary);">
-            ${item.definicion.replace(/\n/g, '<br><br>')}
+
+        <div style="font-size: 16px; color: var(--text-primary);">
+            ${defHtml}
         </div>
         
         ${item.nombre_hebreo ? `<h3 style="color: var(--accent); margin-top:20px;">Nombre en hebreo</h3><p>${item.nombre_hebreo}</p>` : ''}
