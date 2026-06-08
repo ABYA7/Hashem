@@ -1,4 +1,5 @@
 let dictionaryDB = {};
+let baseDictionaryMap = {};
 
 const bookNames = {
     "gn": "Génesis", "ex": "Éxodo", "lv": "Levítico", "nm": "Números", "dt": "Deuteronomio",
@@ -446,14 +447,21 @@ async function loadDictionary() {
         const response = await fetch('data/diccionario.json');
         const baseDB = await response.json(); // Artículos base del archivo JSON
 
+        baseDictionaryMap = {};
+        baseDB.forEach(item => {
+            baseDictionaryMap[item.termino] = item;
+        });
+
         // Cargar artículos guardados por el admin en localStorage
-        const saved = localStorage.getItem('hashemDictionary');
-        const savedItems = saved ? JSON.parse(saved) : [];
+        const saved = loadSavedDictionaryItems();
+        const deleted = loadDeletedDictionaryTerms();
 
         // Combinar: los guardados por el admin tienen prioridad (reemplazan los del JSON si tienen el mismo término)
         const mergedMap = {};
         baseDB.forEach(item => { mergedMap[item.termino] = item; });
-        savedItems.forEach(item => { mergedMap[item.termino] = item; });
+        saved.forEach(item => { mergedMap[item.termino] = item; });
+        deleted.forEach(term => { delete mergedMap[term]; });
+
         dictionaryDB = Object.values(mergedMap);
 
         // Inicializar alfabeto
@@ -477,6 +485,43 @@ async function loadDictionary() {
     } catch (error) {
         console.error("Error cargando diccionario:", error);
     }
+}
+
+function loadSavedDictionaryItems() {
+    const saved = localStorage.getItem('hashemDictionary');
+    try {
+        return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+        console.error('Error parsing hashemDictionary from localStorage:', e);
+        return [];
+    }
+}
+
+function loadDeletedDictionaryTerms() {
+    const deleted = localStorage.getItem('hashemDictionaryDeleted');
+    try {
+        return deleted ? JSON.parse(deleted) : [];
+    } catch (e) {
+        console.error('Error parsing hashemDictionaryDeleted from localStorage:', e);
+        return [];
+    }
+}
+
+function saveDeletedDictionaryTerms(terms) {
+    localStorage.setItem('hashemDictionaryDeleted', JSON.stringify(terms));
+}
+
+function addDeletedDictionaryTerm(term) {
+    const deleted = loadDeletedDictionaryTerms();
+    if (!deleted.includes(term)) {
+        deleted.push(term);
+        saveDeletedDictionaryTerms(deleted);
+    }
+}
+
+function removeDeletedDictionaryTerm(term) {
+    const deleted = loadDeletedDictionaryTerms().filter(t => t !== term);
+    saveDeletedDictionaryTerms(deleted);
 }
 
 // Persistir toda la base de datos del diccionario en localStorage
@@ -554,7 +599,7 @@ function renderDictionaryList(items) {
         const realIndex = dictionaryDB.findIndex(dbItem => dbItem.termino === item.termino);
         
         html += `
-            <div class="dict-list-item" onclick="showDictionaryArticle(${realIndex})" style="padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.3s;">
+            <div class="dict-list-item" onclick="showDictionaryArticle(${realIndex}, this)" style="padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.3s;">
                 <h3 style="margin: 0 0 5px 0; color: var(--accent); font-size: 16px;">${item.termino}</h3>
                 <span style="font-size: 12px; color: #fff; background: #333; padding: 2px 8px; border-radius: 12px;">${item.categoria}</span>
             </div>
@@ -564,7 +609,7 @@ function renderDictionaryList(items) {
     listDiv.innerHTML = html;
 }
 
-window.showDictionaryArticle = function(index) {
+window.showDictionaryArticle = function(index, clickedItem) {
     const articleDiv = document.getElementById('dictionaryArticle');
     const item = dictionaryDB[index];
     
@@ -572,7 +617,6 @@ window.showDictionaryArticle = function(index) {
 
     // Resaltar en la lista
     document.querySelectorAll('.dict-list-item').forEach(el => el.style.background = 'transparent');
-    const clickedItem = event.currentTarget;
     if (clickedItem) clickedItem.style.background = 'rgba(212, 175, 55, 0.1)';
 
     let refsHtml = '';
@@ -719,6 +763,7 @@ window.openDictAdminModal = function(index = -1) {
 window.saveDictArticle = function() {
     const index = parseInt(document.getElementById('dictAdminIndex').value);
     const refsRaw = document.getElementById('dictAdminReferencias').value;
+    const oldTerm = index >= 0 && dictionaryDB[index] ? dictionaryDB[index].termino : null;
 
     // Recoger campos adicionales
     const nombreHebreo = document.getElementById('dictAdminNombreHebreo').value.trim();
@@ -764,8 +809,13 @@ window.saveDictArticle = function() {
     }
 
     if (index >= 0) {
+        if (oldTerm && oldTerm !== newItem.termino) {
+            addDeletedDictionaryTerm(oldTerm);
+            removeDeletedDictionaryTerm(newItem.termino);
+        }
         dictionaryDB[index] = newItem;
     } else {
+        removeDeletedDictionaryTerm(newItem.termino);
         dictionaryDB.push(newItem);
     }
 
@@ -780,7 +830,21 @@ window.saveDictArticle = function() {
 
 window.deleteDictArticle = function(index) {
     if (confirm("¿Estás seguro de que deseas borrar este artículo?")) {
+        const item = dictionaryDB[index];
+        if (!item) return;
+
+        const deletedTerm = item.termino;
         dictionaryDB.splice(index, 1);
+
+        const savedItems = loadSavedDictionaryItems().filter(i => i.termino !== deletedTerm);
+        localStorage.setItem('hashemDictionary', JSON.stringify(savedItems));
+
+        if (baseDictionaryMap[deletedTerm]) {
+            addDeletedDictionaryTerm(deletedTerm);
+        } else {
+            removeDeletedDictionaryTerm(deletedTerm);
+        }
+
         // Persistir el borrado en localStorage
         saveDictionaryToLocal();
         document.getElementById('dictionaryArticle').innerHTML = `
@@ -1899,19 +1963,13 @@ window.renderMultimediaCategory = function(category, element) {
         
         if (category === 'imagenes' || category === 'ilustraciones') {
             card.innerHTML = `
-
-            <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgODAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkVycm9yIGNhcmdhbmRvIGltYWdlbjwvdGV4dD48L3N2Zz4='"/>
-            <div class="media-info">
-                <div class="media-title">${item.title}</div>
-                <div class="media-desc">${item.desc}</div>
-            </div>
-        `;
-        card.onclick = () => window.open(item.url, '_blank');
+                <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgODAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkVycm9yIGNhcmdhbmRvIGltYWdlbjwvdGV4dD48L3N2Zz4='"/>
                 <div class="media-info">
                     <div class="media-title">${item.title}</div>
                     <div class="media-desc">${item.desc}</div>
                 </div>
             `;
+            card.onclick = () => window.open(item.url, '_blank');
         } else if (category === 'videos') {
             card.innerHTML = `
                 <a href="${item.url}" target="_blank" rel="noopener">
