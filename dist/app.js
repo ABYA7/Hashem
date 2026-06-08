@@ -1,5 +1,7 @@
-let dictionaryDB = {};
+let dictionaryDB = [];
 let baseDictionaryMap = {};
+const DICTIONARY_STORAGE_KEY = 'hashemDictionary';
+const DICTIONARY_DELETED_KEY = 'hashemDictionaryDeleted';
 
 const bookNames = {
     "gn": "Génesis", "ex": "Éxodo", "lv": "Levítico", "nm": "Números", "dt": "Deuteronomio",
@@ -109,15 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 });
-
-async function loadDictionary() {
-    try {
-        const response = await fetch('data/diccionario.json');
-        dictionaryDB = await response.json();
-    } catch (error) {
-        console.error("Error cargando diccionario:", error);
-    }
-}
 
 async function loadBible(version) {
     const bookSelect = document.getElementById('bibleBookSelect');
@@ -453,14 +446,22 @@ async function loadDictionary() {
         });
 
         // Cargar artículos guardados por el admin en localStorage
-        const saved = loadSavedDictionaryItems();
+        const savedItems = loadSavedDictionaryItems();
         const deleted = loadDeletedDictionaryTerms();
 
-        // Combinar: los guardados por el admin tienen prioridad (reemplazan los del JSON si tienen el mismo término)
+        const deletedSet = new Set(deleted);
         const mergedMap = {};
-        baseDB.forEach(item => { mergedMap[item.termino] = item; });
-        saved.forEach(item => { mergedMap[item.termino] = item; });
-        deleted.forEach(term => { delete mergedMap[term]; });
+
+        baseDB.forEach(item => {
+            if (!deletedSet.has(item.termino)) {
+                mergedMap[item.termino] = item;
+            }
+        });
+
+        Object.keys(savedItems).forEach(term => {
+            mergedMap[term] = savedItems[term];
+            deletedSet.delete(term);
+        });
 
         dictionaryDB = Object.values(mergedMap);
 
@@ -488,27 +489,31 @@ async function loadDictionary() {
 }
 
 function loadSavedDictionaryItems() {
-    const saved = localStorage.getItem('hashemDictionary');
+    const saved = localStorage.getItem(DICTIONARY_STORAGE_KEY);
     try {
-        return saved ? JSON.parse(saved) : [];
+        return saved ? JSON.parse(saved) : {};
     } catch (e) {
-        console.error('Error parsing hashemDictionary from localStorage:', e);
-        return [];
+        console.error(`Error parsing ${DICTIONARY_STORAGE_KEY} from localStorage:`, e);
+        return {};
     }
 }
 
+function saveSavedDictionaryItems(itemsMap) {
+    localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
+}
+
 function loadDeletedDictionaryTerms() {
-    const deleted = localStorage.getItem('hashemDictionaryDeleted');
+    const deleted = localStorage.getItem(DICTIONARY_DELETED_KEY);
     try {
         return deleted ? JSON.parse(deleted) : [];
     } catch (e) {
-        console.error('Error parsing hashemDictionaryDeleted from localStorage:', e);
+        console.error(`Error parsing ${DICTIONARY_DELETED_KEY} from localStorage:`, e);
         return [];
     }
 }
 
 function saveDeletedDictionaryTerms(terms) {
-    localStorage.setItem('hashemDictionaryDeleted', JSON.stringify(terms));
+    localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
 }
 
 function addDeletedDictionaryTerm(term) {
@@ -522,11 +527,6 @@ function addDeletedDictionaryTerm(term) {
 function removeDeletedDictionaryTerm(term) {
     const deleted = loadDeletedDictionaryTerms().filter(t => t !== term);
     saveDeletedDictionaryTerms(deleted);
-}
-
-// Persistir toda la base de datos del diccionario en localStorage
-function saveDictionaryToLocal() {
-    localStorage.setItem('hashemDictionary', JSON.stringify(dictionaryDB));
 }
 
 function initDictionaryAlphabet() {
@@ -808,19 +808,22 @@ window.saveDictArticle = function() {
         return;
     }
 
+    const savedItems = loadSavedDictionaryItems();
+
     if (index >= 0) {
         if (oldTerm && oldTerm !== newItem.termino) {
+            delete savedItems[oldTerm];
             addDeletedDictionaryTerm(oldTerm);
-            removeDeletedDictionaryTerm(newItem.termino);
         }
+        savedItems[newItem.termino] = newItem;
         dictionaryDB[index] = newItem;
     } else {
         removeDeletedDictionaryTerm(newItem.termino);
+        savedItems[newItem.termino] = newItem;
         dictionaryDB.push(newItem);
     }
 
-    // Guardar automáticamente en localStorage para persistir al recargar
-    saveDictionaryToLocal();
+    saveSavedDictionaryItems(savedItems);
 
     document.getElementById('dictAdminModal').style.display = 'none';
     filterDictionary();
@@ -836,17 +839,15 @@ window.deleteDictArticle = function(index) {
         const deletedTerm = item.termino;
         dictionaryDB.splice(index, 1);
 
-        const savedItems = loadSavedDictionaryItems().filter(i => i.termino !== deletedTerm);
-        localStorage.setItem('hashemDictionary', JSON.stringify(savedItems));
+        const savedItems = loadSavedDictionaryItems();
+        delete savedItems[deletedTerm];
+        saveSavedDictionaryItems(savedItems);
 
         if (baseDictionaryMap[deletedTerm]) {
             addDeletedDictionaryTerm(deletedTerm);
         } else {
             removeDeletedDictionaryTerm(deletedTerm);
         }
-
-        // Persistir el borrado en localStorage
-        saveDictionaryToLocal();
         document.getElementById('dictionaryArticle').innerHTML = `
             <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
                 <i class="fas fa-book-reader" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
