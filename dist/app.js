@@ -491,7 +491,25 @@ async function loadDictionary() {
 function loadSavedDictionaryItems() {
     const saved = localStorage.getItem(DICTIONARY_STORAGE_KEY);
     try {
-        return saved ? JSON.parse(saved) : {};
+        if (!saved) return {};
+
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+            const savedMap = {};
+            parsed.forEach(item => {
+                if (item && item.termino) {
+                    savedMap[item.termino] = item;
+                }
+            });
+            localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(savedMap));
+            return savedMap;
+        }
+
+        if (parsed && typeof parsed === 'object') {
+            return parsed;
+        }
+
+        return {};
     } catch (e) {
         console.error(`Error parsing ${DICTIONARY_STORAGE_KEY} from localStorage:`, e);
         return {};
