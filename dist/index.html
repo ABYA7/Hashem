@@ -17,6 +17,12 @@
     <script src="data/mapsData.js?v=2"></script>
         <script src="data/timelineData.js?v=3"></script>
     <script src="data/multimediaData.js?v=1"></script>
+    <!-- Configuración runtime: establecer DICTIONARY_API_BASE aquí para activar persistencia remota -->
+    <script>
+        window.HASHEM_CONFIG = window.HASHEM_CONFIG || {};
+        // Ejemplo: window.HASHEM_CONFIG.DICTIONARY_API_BASE = 'https://hashem-api.example.com';
+        window.HASHEM_CONFIG.DICTIONARY_API_BASE = '';
+    </script>
     <script src="app.js?v=5" defer></script>
 </head>
 

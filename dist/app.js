@@ -2,6 +2,12 @@ let dictionaryDB = [];
 let baseDictionaryMap = {};
 const DICTIONARY_STORAGE_KEY = 'hashemDictionary';
 const DICTIONARY_DELETED_KEY = 'hashemDictionaryDeleted';
+// DICTIONARY_API_BASE puede venir de `window.HASHEM_CONFIG.DICTIONARY_API_BASE`
+// (defínela en `index.html` antes de cargar `app.js`). Por defecto vacío.
+let DICTIONARY_API_BASE = '';
+if (typeof window !== 'undefined' && window.HASHEM_CONFIG && window.HASHEM_CONFIG.DICTIONARY_API_BASE) {
+    DICTIONARY_API_BASE = window.HASHEM_CONFIG.DICTIONARY_API_BASE;
+}
 
 const bookNames = {
     "gn": "Génesis", "ex": "Éxodo", "lv": "Levítico", "nm": "Números", "dt": "Deuteronomio",
@@ -437,17 +443,34 @@ let currentDictFilter = {
 
 async function loadDictionary() {
     try {
-        const response = await fetch('data/diccionario.json');
-        const baseDB = await response.json(); // Artículos base del archivo JSON
+        let baseDB = [];
+        // Si hay API configurada, intentar obtener desde la API
+        if (DICTIONARY_API_BASE) {
+            try {
+                const apiRes = await fetch(`${DICTIONARY_API_BASE.replace(/\/$/, '')}/api/diccionario?limit=10000&page=1`);
+                const apiJson = await apiRes.json();
+                // La API del admin devuelve { total, pagina, data }
+                if (Array.isArray(apiJson)) baseDB = apiJson;
+                else if (apiJson && Array.isArray(apiJson.data)) baseDB = apiJson.data;
+                else baseDB = [];
+            } catch (e) {
+                console.warn('No se pudo cargar diccionario desde API, usando archivo local:', e);
+                const response = await fetch('data/diccionario.json');
+                baseDB = await response.json();
+            }
+        } else {
+            const response = await fetch('data/diccionario.json');
+            baseDB = await response.json();
+        }
 
         baseDictionaryMap = {};
         baseDB.forEach(item => {
             baseDictionaryMap[item.termino] = item;
         });
 
-        // Cargar artículos guardados por el admin en localStorage
-        const savedItems = loadSavedDictionaryItems();
-        const deleted = loadDeletedDictionaryTerms();
+        // Cargar artículos guardados por el admin (IndexedDB/localStorage)
+        const savedItems = await loadSavedDictionaryItems();
+        const deleted = await loadDeletedDictionaryTerms();
 
         const deletedSet = new Set(deleted);
         const mergedMap = {};
@@ -488,63 +511,131 @@ async function loadDictionary() {
     }
 }
 
-function loadSavedDictionaryItems() {
-    const saved = localStorage.getItem(DICTIONARY_STORAGE_KEY);
+// IndexedDB wrapper (simple key-value store) — fallback a localStorage si no está disponible
+function openIDB() {
+    return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) return resolve(null);
+        const req = indexedDB.open('hashemDB', 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('keyval')) db.createObjectStore('keyval');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+    });
+}
+
+async function idbGet(key) {
+    const db = await openIDB();
+    if (!db) return null;
+    return new Promise((resolve) => {
+        const tx = db.transaction('keyval', 'readonly');
+        const store = tx.objectStore('keyval');
+        const rq = store.get(key);
+        rq.onsuccess = () => resolve(rq.result === undefined ? null : rq.result);
+        rq.onerror = () => resolve(null);
+    });
+}
+
+async function idbSet(key, value) {
+    const db = await openIDB();
+    if (!db) return false;
+    return new Promise((resolve) => {
+        const tx = db.transaction('keyval', 'readwrite');
+        const store = tx.objectStore('keyval');
+        const rq = store.put(value, key);
+        rq.onsuccess = () => resolve(true);
+        rq.onerror = () => resolve(false);
+    });
+}
+
+async function idbDelete(key) {
+    const db = await openIDB();
+    if (!db) return false;
+    return new Promise((resolve) => {
+        const tx = db.transaction('keyval', 'readwrite');
+        const store = tx.objectStore('keyval');
+        const rq = store.delete(key);
+        rq.onsuccess = () => resolve(true);
+        rq.onerror = () => resolve(false);
+    });
+}
+
+async function loadSavedDictionaryItems() {
     try {
+        const fromIdb = await idbGet(DICTIONARY_STORAGE_KEY);
+        if (fromIdb) return fromIdb;
+
+        const saved = localStorage.getItem(DICTIONARY_STORAGE_KEY);
         if (!saved) return {};
 
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
             const savedMap = {};
             parsed.forEach(item => {
-                if (item && item.termino) {
-                    savedMap[item.termino] = item;
-                }
+                if (item && item.termino) savedMap[item.termino] = item;
             });
+            await idbSet(DICTIONARY_STORAGE_KEY, savedMap);
             localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(savedMap));
             return savedMap;
         }
 
         if (parsed && typeof parsed === 'object') {
+            await idbSet(DICTIONARY_STORAGE_KEY, parsed);
             return parsed;
         }
 
         return {};
     } catch (e) {
-        console.error(`Error parsing ${DICTIONARY_STORAGE_KEY} from localStorage:`, e);
+        console.error(`Error cargando ${DICTIONARY_STORAGE_KEY}:`, e);
         return {};
     }
 }
 
-function saveSavedDictionaryItems(itemsMap) {
-    localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
+async function saveSavedDictionaryItems(itemsMap) {
+    try {
+        await idbSet(DICTIONARY_STORAGE_KEY, itemsMap);
+        localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
+    } catch (e) {
+        console.error('Error guardando items del diccionario:', e);
+        // fallback
+        localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
+    }
 }
 
-function loadDeletedDictionaryTerms() {
-    const deleted = localStorage.getItem(DICTIONARY_DELETED_KEY);
+async function loadDeletedDictionaryTerms() {
     try {
+        const fromIdb = await idbGet(DICTIONARY_DELETED_KEY);
+        if (fromIdb) return fromIdb;
+        const deleted = localStorage.getItem(DICTIONARY_DELETED_KEY);
         return deleted ? JSON.parse(deleted) : [];
     } catch (e) {
-        console.error(`Error parsing ${DICTIONARY_DELETED_KEY} from localStorage:`, e);
+        console.error(`Error cargando ${DICTIONARY_DELETED_KEY}:`, e);
         return [];
     }
 }
 
-function saveDeletedDictionaryTerms(terms) {
-    localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
-}
-
-function addDeletedDictionaryTerm(term) {
-    const deleted = loadDeletedDictionaryTerms();
-    if (!deleted.includes(term)) {
-        deleted.push(term);
-        saveDeletedDictionaryTerms(deleted);
+async function saveDeletedDictionaryTerms(terms) {
+    try {
+        await idbSet(DICTIONARY_DELETED_KEY, terms);
+        localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
+    } catch (e) {
+        console.error('Error guardando deleted terms:', e);
+        localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
     }
 }
 
-function removeDeletedDictionaryTerm(term) {
-    const deleted = loadDeletedDictionaryTerms().filter(t => t !== term);
-    saveDeletedDictionaryTerms(deleted);
+async function addDeletedDictionaryTerm(term) {
+    const deleted = await loadDeletedDictionaryTerms();
+    if (!deleted.includes(term)) {
+        deleted.push(term);
+        await saveDeletedDictionaryTerms(deleted);
+    }
+}
+
+async function removeDeletedDictionaryTerm(term) {
+    const deleted = (await loadDeletedDictionaryTerms()).filter(t => t !== term);
+    await saveDeletedDictionaryTerms(deleted);
 }
 
 function initDictionaryAlphabet() {
@@ -784,7 +875,7 @@ window.openDictAdminModal = function(index = -1) {
     modal.style.display = 'flex';
 };
 
-window.saveDictArticle = function() {
+window.saveDictArticle = async function() {
     const index = parseInt(document.getElementById('dictAdminIndex').value);
     const refsRaw = document.getElementById('dictAdminReferencias').value;
     const oldTerm = index >= 0 && dictionaryDB[index] ? dictionaryDB[index].termino : null;
@@ -832,22 +923,52 @@ window.saveDictArticle = function() {
         return;
     }
 
-    const savedItems = loadSavedDictionaryItems();
+    const savedItems = await loadSavedDictionaryItems();
+
+    // Si hay backend configurado, intentar sincronizar con la API
+    if (DICTIONARY_API_BASE) {
+        try {
+            // Si el artículo ya tiene un id en la DB local, usar PUT
+            const existing = index >= 0 ? dictionaryDB[index] : null;
+            if (existing && existing.id) {
+                const res = await fetch(`${DICTIONARY_API_BASE.replace(/\/$/, '')}/api/diccionario/${existing.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newItem)
+                });
+                const updated = await res.json();
+                // Actualizar referencias locales con el id retornado
+                newItem.id = updated.id || existing.id;
+            } else {
+                // Crear nuevo en servidor (POST)
+                const res = await fetch(`${DICTIONARY_API_BASE.replace(/\/$/, '')}/api/diccionario`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newItem)
+                });
+                const created = await res.json();
+                if (created && created.id) newItem.id = created.id;
+            }
+        } catch (e) {
+            console.warn('Error sincronizando con la API del diccionario:', e);
+            alert('Advertencia: no se pudo sincronizar con el servidor. Se guardará localmente.');
+        }
+    }
 
     if (index >= 0) {
         if (oldTerm && oldTerm !== newItem.termino) {
             delete savedItems[oldTerm];
-            addDeletedDictionaryTerm(oldTerm);
+            await addDeletedDictionaryTerm(oldTerm);
         }
         savedItems[newItem.termino] = newItem;
         dictionaryDB[index] = newItem;
     } else {
-        removeDeletedDictionaryTerm(newItem.termino);
+        await removeDeletedDictionaryTerm(newItem.termino);
         savedItems[newItem.termino] = newItem;
         dictionaryDB.push(newItem);
     }
 
-    saveSavedDictionaryItems(savedItems);
+    await saveSavedDictionaryItems(savedItems);
 
     document.getElementById('dictAdminModal').style.display = 'none';
     filterDictionary();
@@ -855,22 +976,33 @@ window.saveDictArticle = function() {
     alert("✅ Artículo guardado correctamente. Aparecerá siempre que abras la aplicación.");
 };
 
-window.deleteDictArticle = function(index) {
+window.deleteDictArticle = async function(index) {
     if (confirm("¿Estás seguro de que deseas borrar este artículo?")) {
         const item = dictionaryDB[index];
         if (!item) return;
 
         const deletedTerm = item.termino;
+
+        // Si hay API y el artículo tiene id, intentar borrar en servidor
+        if (DICTIONARY_API_BASE && item.id) {
+            try {
+                await fetch(`${DICTIONARY_API_BASE.replace(/\/$/, '')}/api/diccionario/${item.id}`, { method: 'DELETE' });
+            } catch (e) {
+                console.warn('No se pudo borrar en el servidor:', e);
+                alert('Advertencia: no se pudo borrar en el servidor. Se eliminará localmente.');
+            }
+        }
+
         dictionaryDB.splice(index, 1);
 
-        const savedItems = loadSavedDictionaryItems();
+        const savedItems = await loadSavedDictionaryItems();
         delete savedItems[deletedTerm];
-        saveSavedDictionaryItems(savedItems);
+        await saveSavedDictionaryItems(savedItems);
 
         if (baseDictionaryMap[deletedTerm]) {
-            addDeletedDictionaryTerm(deletedTerm);
+            await addDeletedDictionaryTerm(deletedTerm);
         } else {
-            removeDeletedDictionaryTerm(deletedTerm);
+            await removeDeletedDictionaryTerm(deletedTerm);
         }
         document.getElementById('dictionaryArticle').innerHTML = `
             <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
