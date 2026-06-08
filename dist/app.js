@@ -511,61 +511,8 @@ async function loadDictionary() {
     }
 }
 
-// IndexedDB wrapper (simple key-value store) — fallback a localStorage si no está disponible
-function openIDB() {
-    return new Promise((resolve, reject) => {
-        if (!('indexedDB' in window)) return resolve(null);
-        const req = indexedDB.open('hashemDB', 1);
-        req.onupgradeneeded = () => {
-            const db = req.result;
-            if (!db.objectStoreNames.contains('keyval')) db.createObjectStore('keyval');
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
-    });
-}
-
-async function idbGet(key) {
-    const db = await openIDB();
-    if (!db) return null;
-    return new Promise((resolve) => {
-        const tx = db.transaction('keyval', 'readonly');
-        const store = tx.objectStore('keyval');
-        const rq = store.get(key);
-        rq.onsuccess = () => resolve(rq.result === undefined ? null : rq.result);
-        rq.onerror = () => resolve(null);
-    });
-}
-
-async function idbSet(key, value) {
-    const db = await openIDB();
-    if (!db) return false;
-    return new Promise((resolve) => {
-        const tx = db.transaction('keyval', 'readwrite');
-        const store = tx.objectStore('keyval');
-        const rq = store.put(value, key);
-        rq.onsuccess = () => resolve(true);
-        rq.onerror = () => resolve(false);
-    });
-}
-
-async function idbDelete(key) {
-    const db = await openIDB();
-    if (!db) return false;
-    return new Promise((resolve) => {
-        const tx = db.transaction('keyval', 'readwrite');
-        const store = tx.objectStore('keyval');
-        const rq = store.delete(key);
-        rq.onsuccess = () => resolve(true);
-        rq.onerror = () => resolve(false);
-    });
-}
-
-async function loadSavedDictionaryItems() {
+function loadSavedDictionaryItems() {
     try {
-        const fromIdb = await idbGet(DICTIONARY_STORAGE_KEY);
-        if (fromIdb) return fromIdb;
-
         const saved = localStorage.getItem(DICTIONARY_STORAGE_KEY);
         if (!saved) return {};
 
@@ -575,13 +522,11 @@ async function loadSavedDictionaryItems() {
             parsed.forEach(item => {
                 if (item && item.termino) savedMap[item.termino] = item;
             });
-            await idbSet(DICTIONARY_STORAGE_KEY, savedMap);
             localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(savedMap));
             return savedMap;
         }
 
         if (parsed && typeof parsed === 'object') {
-            await idbSet(DICTIONARY_STORAGE_KEY, parsed);
             return parsed;
         }
 
@@ -592,21 +537,16 @@ async function loadSavedDictionaryItems() {
     }
 }
 
-async function saveSavedDictionaryItems(itemsMap) {
+function saveSavedDictionaryItems(itemsMap) {
     try {
-        await idbSet(DICTIONARY_STORAGE_KEY, itemsMap);
         localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
     } catch (e) {
         console.error('Error guardando items del diccionario:', e);
-        // fallback
-        localStorage.setItem(DICTIONARY_STORAGE_KEY, JSON.stringify(itemsMap));
     }
 }
 
-async function loadDeletedDictionaryTerms() {
+function loadDeletedDictionaryTerms() {
     try {
-        const fromIdb = await idbGet(DICTIONARY_DELETED_KEY);
-        if (fromIdb) return fromIdb;
         const deleted = localStorage.getItem(DICTIONARY_DELETED_KEY);
         return deleted ? JSON.parse(deleted) : [];
     } catch (e) {
@@ -615,27 +555,25 @@ async function loadDeletedDictionaryTerms() {
     }
 }
 
-async function saveDeletedDictionaryTerms(terms) {
+function saveDeletedDictionaryTerms(terms) {
     try {
-        await idbSet(DICTIONARY_DELETED_KEY, terms);
         localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
     } catch (e) {
         console.error('Error guardando deleted terms:', e);
-        localStorage.setItem(DICTIONARY_DELETED_KEY, JSON.stringify(terms));
     }
 }
 
-async function addDeletedDictionaryTerm(term) {
-    const deleted = await loadDeletedDictionaryTerms();
+function addDeletedDictionaryTerm(term) {
+    const deleted = loadDeletedDictionaryTerms();
     if (!deleted.includes(term)) {
         deleted.push(term);
-        await saveDeletedDictionaryTerms(deleted);
+        saveDeletedDictionaryTerms(deleted);
     }
 }
 
-async function removeDeletedDictionaryTerm(term) {
-    const deleted = (await loadDeletedDictionaryTerms()).filter(t => t !== term);
-    await saveDeletedDictionaryTerms(deleted);
+function removeDeletedDictionaryTerm(term) {
+    const deleted = loadDeletedDictionaryTerms().filter(t => t !== term);
+    saveDeletedDictionaryTerms(deleted);
 }
 
 function initDictionaryAlphabet() {
@@ -753,7 +691,7 @@ window.showDictionaryArticle = function(index, clickedItem) {
     // Formatear la definición reduciendo saltos excesivos y usando párrafos compactos
     const defHtml = item.definicion ? item.definicion
         .split(/\n{2,}/) // separar por doble salto en párrafos
-        .map(p => `<p style="margin:0 0 8px; line-height:1.45;">${p.trim().replace(/\n/g, '<br>')}</p>`)
+        .map(p => `<p style="margin:0 0 16px; line-height:1.8;">${p.trim().replace(/\n/g, '<br>')}</p>`)
         .join('') : '';
 
     const html = `
