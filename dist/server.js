@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Servir archivos estáticos (frontend)
-app.use(express.static(path.join(__dirname, '.')));
+app.use('/diccionario', express.static(path.join(__dirname, 'rabi_module')));
 
 // Middleware de autenticación JWT
 function authenticateToken(req, res, next) {

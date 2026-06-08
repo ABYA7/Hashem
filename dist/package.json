@@ -8,7 +8,7 @@
     "start": "node server.js",
     "install:admin": "npm install --prefix admin/server && npm install --prefix admin/client",
     "admin": "concurrently \"npm run dev --prefix admin/server\" \"npm run start --prefix admin/client\"",
-    "build": "copyfiles -f \"*.*\" \"dist/\" && copyfiles -f \"data/**/*\" \"dist/data/\"",
+    "build": "copyfiles -f \"*.*\" \"dist/\" && copyfiles -f \"data/**/*\" \"dist/data/\" && copyfiles -f \"rabi_module/**/*\" \"dist/rabi_module/\"",
     "predeploy": "npm run build",
     "deploy": "npm run build && git add -f dist && git commit -m \"Deploy\" && git push origin HEAD:gh-pages"
   },

@@ -1,0 +1,93 @@
+/* style.css – diseño premium para el visor del Diccionario RABI */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+  --bg-gradient: linear-gradient(135deg, #2b2d42, #393e46);
+  --card-bg: rgba(255, 255, 255, 0.12);
+  --card-blur: blur(12px);
+  --text-color: #e0e0e0;
+  --accent: #00b4d8;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+h1 {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+#search {
+  width: 100%;
+  max-width: 600px;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.15);
+  color: var(--text-color);
+  outline: none;
+  transition: background 0.3s;
+}
+
+#search:focus {
+  background: rgba(255,255,255,0.25);
+}
+
+#results {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 800px;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-blur);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.term {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+
+.definition {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.verses a {
+  color: #ffdd57;
+  text-decoration: underline;
+  margin-right: 0.5rem;
+}
+
+footer {
+  margin-top: auto;
+  padding: 1rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
