@@ -444,14 +444,24 @@ let currentDictFilter = {
 async function loadDictionary() {
     try {
         const response = await fetch('data/diccionario.json');
-        dictionaryDB = await response.json(); // Ahora es un Array de objetos
-        
+        const baseDB = await response.json(); // Artículos base del archivo JSON
+
+        // Cargar artículos guardados por el admin en localStorage
+        const saved = localStorage.getItem('hashemDictionary');
+        const savedItems = saved ? JSON.parse(saved) : [];
+
+        // Combinar: los guardados por el admin tienen prioridad (reemplazan los del JSON si tienen el mismo término)
+        const mergedMap = {};
+        baseDB.forEach(item => { mergedMap[item.termino] = item; });
+        savedItems.forEach(item => { mergedMap[item.termino] = item; });
+        dictionaryDB = Object.values(mergedMap);
+
         // Inicializar alfabeto
         initDictionaryAlphabet();
-        
+
         // Renderizar lista completa inicialmente
         filterDictionary();
-        
+
         // Event Listeners
         document.getElementById('dictionarySearch').addEventListener('input', (e) => {
             currentDictFilter.search = e.target.value.trim().toLowerCase();
@@ -467,6 +477,11 @@ async function loadDictionary() {
     } catch (error) {
         console.error("Error cargando diccionario:", error);
     }
+}
+
+// Persistir toda la base de datos del diccionario en localStorage
+function saveDictionaryToLocal() {
+    localStorage.setItem('hashemDictionary', JSON.stringify(dictionaryDB));
 }
 
 function initDictionaryAlphabet() {
@@ -566,7 +581,7 @@ window.showDictionaryArticle = function(index) {
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border-color);">
                 <h4 style="color: var(--accent); margin-bottom: 10px;">Referencias Bíblicas:</h4>
                 <ul style="list-style-type: none; padding: 0;">
-                    ${item.referencias.map(ref => `<li style="margin-bottom: 5px;"><i class="fas fa-bookmark" style="color: var(--accent); margin-right: 8px;"></i> ${ref}</li>`).join('')}
+                    ${item.referencias.map(ref => `<li style="margin-bottom: 5px;"><i class="fas fa-bookmark" style="color: var(--accent); margin-right: 8px;"></i> <a href="https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}" target="_blank" style="color: var(--accent); text-decoration: underline;">${ref}</a></li>`).join('')}
                 </ul>
             </div>
         `;
@@ -747,22 +762,27 @@ window.saveDictArticle = function() {
         alert("El término y la definición son obligatorios.");
         return;
     }
-    
+
     if (index >= 0) {
         dictionaryDB[index] = newItem;
     } else {
         dictionaryDB.push(newItem);
     }
-    
+
+    // Guardar automáticamente en localStorage para persistir al recargar
+    saveDictionaryToLocal();
+
     document.getElementById('dictAdminModal').style.display = 'none';
     filterDictionary();
     if (index >= 0) showDictionaryArticle(index);
-    alert("Artículo guardado en memoria. Recuerda Descargar la Base de Datos para no perder los cambios.");
+    alert("✅ Artículo guardado correctamente. Aparecerá siempre que abras la aplicación.");
 };
 
 window.deleteDictArticle = function(index) {
     if (confirm("¿Estás seguro de que deseas borrar este artículo?")) {
         dictionaryDB.splice(index, 1);
+        // Persistir el borrado en localStorage
+        saveDictionaryToLocal();
         document.getElementById('dictionaryArticle').innerHTML = `
             <div style="text-align: center; color: var(--text-secondary); margin-top: 50px;">
                 <i class="fas fa-book-reader" style="font-size: 48px; margin-bottom: 15px; color: var(--accent);"></i>
@@ -1165,7 +1185,7 @@ window.showSmartPanel = function(article) {
         html += `<h4 style="color: var(--accent); margin-bottom: 5px;">Referencias Bíblicas</h4>
                  <ul style="padding-left: 20px; font-size: 0.9em; margin-bottom: 15px; color: var(--text-secondary);">`;
         article.referencias.forEach(ref => {
-            html += `<li>${ref}</li>`;
+            html += `<li><a href="https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}" target="_blank" rel="noopener">${ref}</a></li>`;
         });
         html += `</ul>`;
     }
@@ -1879,18 +1899,26 @@ window.renderMultimediaCategory = function(category, element) {
         
         if (category === 'imagenes' || category === 'ilustraciones') {
             card.innerHTML = `
-                <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgODAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkVycm9yIGNhcmdhbmRvIGltYWdlbjwvdGV4dD48L3N2Zz4='">
+
+            <img src="${item.url}" alt="${item.title}" class="media-img" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgODAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkVycm9yIGNhcmdhbmRvIGltYWdlbjwvdGV4dD48L3N2Zz4='"/>
+            <div class="media-info">
+                <div class="media-title">${item.title}</div>
+                <div class="media-desc">${item.desc}</div>
+            </div>
+        `;
+        card.onclick = () => window.open(item.url, '_blank');
                 <div class="media-info">
                     <div class="media-title">${item.title}</div>
                     <div class="media-desc">${item.desc}</div>
                 </div>
             `;
-            card.onclick = () => window.open(item.url, '_blank');
         } else if (category === 'videos') {
             card.innerHTML = `
-                <video controls width="100%" poster="${item.poster || ''}" class="media-img" style="background:#000;">
-                    <source src="${item.url}" type="video/mp4">
-                </video>
+                <a href="${item.url}" target="_blank" rel="noopener">
+                    <video controls width="100%" poster="${item.poster || ''}" class="media-img" style="background:#000;">
+                        <source src="${item.url}" type="video/mp4">
+                    </video>
+                </a>
                 <div class="media-info">
                     <div class="media-title">${item.title}</div>
                     <div class="media-desc">${item.desc}</div>
