@@ -21,8 +21,9 @@
     <!-- Configuración runtime: establecer DICTIONARY_API_BASE aquí para activar persistencia remota -->
     <script>
         window.HASHEM_CONFIG = window.HASHEM_CONFIG || {};
-        // Ejemplo: window.HASHEM_CONFIG.DICTIONARY_API_BASE = 'https://hashem-api.example.com';
-        window.HASHEM_CONFIG.DICTIONARY_API_BASE = '';
+        // Para pruebas locales con el backend admin/server (ejecutar en http://localhost:3000)
+        // En producción define la URL real del API (ej: https://api.hashem.example.com)
+        window.HASHEM_CONFIG.DICTIONARY_API_BASE = 'http://localhost:3000';
     </script>
     <script src="app.js?v=5" defer></script>
 </head>
@@ -145,6 +146,7 @@
                     <select id="bibleVersionSelect" style="flex: 1;">
                         <option value="rv1909">Reina Valera 1909</option>
                         <option value="rv1960">Reina Valera 1960</option>
+                        <option value="kjv">King James Version (KJV)</option>
                     </select>
                     <select id="bibleBookSelect" style="flex: 1;" disabled>
                         <option value="">Cargando libros...</option>

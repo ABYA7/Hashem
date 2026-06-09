@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hashem_db
+      POSTGRES_USER: hashem_admin
+      POSTGRES_PASSWORD: hashem_pass
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  admin:
+    build: ./admin/server
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=hashem_db
+      - DB_USER=hashem_admin
+      - DB_PASSWORD=hashem_pass
+      - NODE_ENV=production
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
