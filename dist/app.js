@@ -691,7 +691,7 @@ window.showDictionaryArticle = function(index, clickedItem) {
     // Formatear la definición reduciendo saltos excesivos y usando párrafos compactos
     const defHtml = item.definicion ? item.definicion
         .split(/\n{2,}/) // separar por doble salto en párrafos
-        .map(p => `<p style="margin:0 0 16px; line-height:1.8;">${p.trim().replace(/\n/g, '<br>')}</p>`)
+        .map(p => `<p style="margin:0 0 8px; line-height:1.45;">${p.trim().replace(/\n/g, '<br>')}</p>`)
         .join('') : '';
 
     const html = `
