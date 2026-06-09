@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_PRODUCTION: 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +25,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Debug: show tools
+        run: |
+          node -v
+          npm -v
+          ls -la node_modules/.bin || true
 
       - name: Build
         run: npm run build
