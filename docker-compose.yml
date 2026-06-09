@@ -23,7 +23,7 @@ services:
       - DB_PASSWORD=hashem_pass
       - NODE_ENV=production
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - db
 
